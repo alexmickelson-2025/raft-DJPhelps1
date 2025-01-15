@@ -30,6 +30,7 @@ namespace raft_DJPhelps1
             Heartbeat = 50;
             DelayStop = new CancellationTokenSource();
             Term = 1;
+            Id = Guid.NewGuid();
         }
 
 
@@ -57,21 +58,28 @@ namespace raft_DJPhelps1
 
         public async Task<bool> RequestVoteRPC(Guid id, int term)
         {
-            await Task.Delay(5);
-            
-            if (Votes.ContainsKey((term,Id)) && Votes[(term,Id)] != this.Id && Votes[(term, Id)] == id)
+            if(term >= Term)
             {
-                DelayStop.Cancel();
-                return true;
-            }
-            else if(!Votes.ContainsKey((term, Id))) {
-                Votes.Add((term, Id), id);
-                DelayStop.Cancel();
-                return true;
+                if (Votes.ContainsKey((term,Id)) && Votes[(term,Id)] == id)
+                {
+                    Term = term;
+                    DelayStop.Cancel();
+                    return true;
+                }
+                else if(!Votes.ContainsKey((term, Id))) {
+                    Votes.Add((term, Id), id);
+                    Term = term;
+                    DelayStop.Cancel();
+                    return true;
+                }
+                else
+                {
+                    DelayStop.Cancel();
+                    return false;
+                }
             }
             else
             {
-                DelayStop.Cancel();
                 return false;
             }
         }
@@ -82,11 +90,22 @@ namespace raft_DJPhelps1
             Term++;
             await RequestVotes();
             await Task.Delay(ElectionTimeoutCurr);
-            if (Votes.Where(
-                x => x.Key == (Term,Id) && x.Value == this.Id
-                ).Count() > Nodes.Count / 2)
+
+            int votecountforme = 0;
+
+            foreach(var vote in Votes)
+            {
+                if (vote.Key.Item1 == Term && vote.Value == Id)
+                    votecountforme++;
+            }
+
+            if (votecountforme > Nodes.Count() / 2)
             {
                 await MakeLeader();
+            }
+            else
+            {
+                State = "Follower";
             }
         }
 
@@ -113,7 +132,7 @@ namespace raft_DJPhelps1
                     try
                     {
                         await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
-                        await ElectionIsTimedOut();
+                        await IsTimedOut();
                     }
                     catch (Exception e)
                     {
@@ -125,7 +144,8 @@ namespace raft_DJPhelps1
                     try
                     {
                         await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
-                        await LeaderIsTimedOut();
+                        await IsTimedOut();
+
                     }
                     catch (Exception e)
                     {
@@ -142,15 +162,7 @@ namespace raft_DJPhelps1
             ElectionTimeoutCurr = ElectionTimerMax;
         }
 
-        public async Task ElectionIsTimedOut()
-        {
-            var rand = new Random();
-            ElectionTimerMax = rand.Next(150, 300);
-            RefreshElectionTimeout();
-            await StartNewElection();
-        }
-
-        public async Task LeaderIsTimedOut()
+        public async Task IsTimedOut()
         {
             var rand = new Random();
             ElectionTimerMax = rand.Next(150, 300);

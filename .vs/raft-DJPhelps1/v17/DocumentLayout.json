@@ -84,7 +84,7 @@
               "RelativeDocumentMoniker": "raft-DJPhelps1-Test\\RaftElectionTests.cs",
               "ToolTip": "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1-Test\\RaftElectionTests.cs",
               "RelativeToolTip": "raft-DJPhelps1-Test\\RaftElectionTests.cs",
-              "ViewState": "AgIAAIoAAAAAAAAAAAAQwIAAAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAAJQAAAAAAAAAAAAqwK4AAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-12T05:36:47.051Z",
               "EditorCaption": ""
@@ -99,8 +99,7 @@
               "RelativeToolTip": "raft-DJPhelps1\\NodeFactory.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-12T05:37:31.506Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-12T05:37:31.506Z"
             },
             {
               "$type": "Document",
@@ -110,7 +109,7 @@
               "RelativeDocumentMoniker": "raft-DJPhelps1\\Node.cs",
               "ToolTip": "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1\\Node.cs",
               "RelativeToolTip": "raft-DJPhelps1\\Node.cs",
-              "ViewState": "AgIAAK8AAAAAAAAAAAAAAFUAAAAnAAAAAAAAAA==",
+              "ViewState": "AgIAADgAAAAAAAAAAAAvwEYAAAAgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-12T05:37:23.657Z",
               "EditorCaption": ""
@@ -125,8 +124,7 @@
               "RelativeToolTip": "raft-DJPhelps1\\INode.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-12T05:37:08.219Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-12T05:37:08.219Z"
             }
           ]
         }

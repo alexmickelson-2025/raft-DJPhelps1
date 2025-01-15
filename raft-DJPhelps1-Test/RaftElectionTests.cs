@@ -1,5 +1,6 @@
 using NSubstitute;
 using raft_DJPhelps1;
+using System.Xml.Linq;
 
 namespace raft_TDD_Tests
 {
@@ -123,8 +124,12 @@ namespace raft_TDD_Tests
             Node node3 = new Node();
             Node node4 = new Node();
             Node node5 = new Node();
-
+            
             node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+            node1.Nodes.Add(node4.Id, node4);
+            node1.Nodes.Add(node5.Id, node5);
+
 
             await node1.Start();
             await node2.Start();
@@ -141,14 +146,19 @@ namespace raft_TDD_Tests
             Assert.True(node1.State == "Leader");
         }
 
-        [Fact] // Testing #9.2
-        public async Task NodeStartsElectionWithUnresponsiveNode_Test()
+        [Fact] // Testing #10
+        public async Task NodeConclusionElectionWithUnresponsiveNode_Test()
         {
             Node node1 = new Node();
             Node node2 = new Node();
             Node node3 = new Node();
             Node node4 = new Node();
             Node node5 = new Node();
+
+            node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+            node1.Nodes.Add(node4.Id, node4);
+            node1.Nodes.Add(node5.Id, node5);
 
 
             await node1.Start();
@@ -167,19 +177,31 @@ namespace raft_TDD_Tests
         [Fact] // Testing #10
         public async Task CandidateReceivesMajorityVotesWhileWaitingForUnresponsiveNode_Test()
         {
+            Node node1 = new Node();
+            Node node2 = new Node();
+            Node node3 = new Node();
+            Node node4 = new Node();
+            Node node5 = new Node();
+            node1.Term = 4;
 
-        }
+            node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+            node1.Nodes.Add(node4.Id, node4);
+            node1.Nodes.Add(node5.Id, node5);
 
-        [Fact] // Testing #1
-        public async Task FollowerInEarlierTermRespondsToARequestForVoteRPC_Yes_Test()
-        {
 
-        }
+            await node1.Start();
+            await node2.Start();
+            await node3.Start();
+            await node5.Start();
+            await Task.Delay(1000);
+            await node5.Stop();
+            await node3.Stop();
+            await node2.Stop();
+            await node1.Stop();
 
-        [Fact] // Testing #1
-        public async Task FollowerInEarlierTermRespondsToARequestForVoteRPC_IncrementTerm_Test()
-        {
-
+            Assert.True(node1.State == "Leader");
+            Assert.True(node4.Term == 5);
         }
 
         // DEPRECATED TEST: NEEDS REWRITE

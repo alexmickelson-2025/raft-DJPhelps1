@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("raft-DJPhelps1-Test")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6e934eeb0ec6db57b7651d92467e906990ed5ad4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a82fac757ad5fc2a87268072ec626c04c6e18ba5")]
 [assembly: System.Reflection.AssemblyProductAttribute("raft-DJPhelps1-Test")]
 [assembly: System.Reflection.AssemblyTitleAttribute("raft-DJPhelps1-Test")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
