@@ -9,6 +9,7 @@ namespace raft_DJPhelps1
     public class Node : INode
     {
         public bool IsStarted { get; set; }
+        public string NodeName { get; set; }
         public string State { get; set; }     
         public Guid CurrentLeader { get; set; }
         public Guid Id { get; internal set; }

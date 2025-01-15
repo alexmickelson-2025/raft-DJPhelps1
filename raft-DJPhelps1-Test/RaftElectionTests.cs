@@ -38,7 +38,7 @@ namespace raft_TDD_Tests
         }
 
         [Fact] // Testing #3
-        public async Task NodeInitializesInFollowerState_Test()
+        public void NodeInitializesInFollowerState_Test()
         {
             Node node = new Node();
 

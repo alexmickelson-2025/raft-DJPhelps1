@@ -1,0 +1,25 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using raft_DJPhelps1;
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+@code {
+    List<SimulationNode> simulationNodes = new List<SimulationNode>();
+        void StartSim(){
+            var node1 = new Node();
+            var node2 = new Node();
+            var node3 = new Node();
+            node1.NodeName = "Node 1";
+            node2.NodeName = "Node 2";
+            node3.NodeName = "Node 3";
+
+            simulationNodes.Add(new SimulationNode(new Node()));
+            simulationNodes.Add(new SimulationNode(new Node()));
+            simulationNodes.Add(new SimulationNode(new Node()));
+        }
+}

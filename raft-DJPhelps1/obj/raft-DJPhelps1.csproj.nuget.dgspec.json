@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj": {}
+    "C:\\Users\\dallin.phelps\\source\\repos\\Raft\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj": {}
   },
   "projects": {
-    "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj": {
+    "C:\\Users\\dallin.phelps\\source\\repos\\Raft\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj",
+        "projectUniqueName": "C:\\Users\\dallin.phelps\\source\\repos\\Raft\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj",
         "projectName": "raft-DJPhelps1",
-        "projectPath": "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj",
-        "packagesPath": "C:\\Users\\ember\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\ember\\source\\repos\\raft-DJPhelps1\\raft-DJPhelps1\\obj\\",
+        "projectPath": "C:\\Users\\dallin.phelps\\source\\repos\\Raft\\raft-DJPhelps1\\raft-DJPhelps1\\raft-DJPhelps1.csproj",
+        "packagesPath": "C:\\Users\\dallin.phelps\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\dallin.phelps\\source\\repos\\Raft\\raft-DJPhelps1\\raft-DJPhelps1\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\ember\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\dallin.phelps\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -43,7 +43,7 @@
         "restoreAuditProperties": {
           "enableAudit": "true",
           "auditLevel": "low",
-          "auditMode": "all"
+          "auditMode": "direct"
         },
         "SdkAnalysisLevel": "9.0.100"
       },
@@ -66,7 +66,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.101/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
