@@ -18,7 +18,6 @@ namespace raft_DJPhelps1
                 node.Id = Guid.NewGuid();
             else
                 node.Id = ((Guid)setGuid);
-            node.ElectionTimeout = DefaultTimer;
             return node;
         }
     }

@@ -1,0 +1,12 @@
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.AssemblyInfoInputs.cache
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.AssemblyInfo.cs
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.csproj.CoreCompileInputs.cache
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.sourcelink.json
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\bin\Debug\net8.0\raft-DJPhelps1.deps.json
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\bin\Debug\net8.0\raft-DJPhelps1.dll
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\bin\Debug\net8.0\raft-DJPhelps1.pdb
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.dll
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\refint\raft-DJPhelps1.dll
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\raft-DJPhelps1.pdb
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1\obj\Debug\net8.0\ref\raft-DJPhelps1.dll
