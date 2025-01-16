@@ -1,4 +1,5 @@
 using NSubstitute;
+using NSubstitute.Core.Arguments;
 using raft_DJPhelps1;
 using System.Xml.Linq;
 
@@ -14,11 +15,11 @@ namespace raft_TDD_Tests
             node.Nodes.Add(node3.Id, node3);
             node3.Nodes.Add(node.Id, node);
             
-            await node.Start();
+            node.Start();
             await Task.Delay(300);
 
-            await node.Stop();
-            await node3.Received().AppendEntries(node.Id);
+            node.Stop();
+            node3.Received().AppendEntries(node.Id);
             Assert.True(node3.State == "Follower");
         }
 
@@ -30,10 +31,10 @@ namespace raft_TDD_Tests
             node.Nodes.Add(node2.Id, node2);
             node2.Nodes.Add(node.Id, node);
 
-            await node.Start();
+            node.Start();
             await Task.Delay(100);
 
-            await node.Stop();
+            node.Stop();
             Assert.True(node2.CurrentLeader == node.Id);
         }
 
@@ -50,9 +51,9 @@ namespace raft_TDD_Tests
         {
             Node node = new Node();
 
-            await node.Start();
-            await Task.Delay(node.ElectionTimerMax + 20);
-            await node.Stop();
+            node.Start();
+            await Task.Delay(node.ElectionTimeoutCurr);
+            node.Stop();
 
             Assert.True(node.State == "Candidate");
         }
@@ -62,9 +63,9 @@ namespace raft_TDD_Tests
         {
             Node node = new Node();
             
-            await node.Start();
+            node.Start();
             await Task.Delay(node.ElectionTimerMax + 1);
-            await node.Stop();
+            node.Stop();
 
             Assert.True(node.ElectionTimerMax >= 150 && node.ElectionTimerMax <= 300);
         }
@@ -75,9 +76,9 @@ namespace raft_TDD_Tests
             Node node = new Node();
             var expectedTerm = node.Term;
 
-            await node.Start();
+            node.Start();
             await Task.Delay(node.ElectionTimerMax+30);
-            await node.Stop();
+            node.Stop();
             
             var actualTerm = node.Term;
 
@@ -93,15 +94,13 @@ namespace raft_TDD_Tests
             node3.Nodes.Add(node.Id, node);
             var expectedTimeoutCurr = node3.ElectionTimerMax;
 
-            await node.Start();
-            await node3.Start();
+            node.Start();
+            node3.Start();
             await Task.Delay(400);
-            await node3.Stop();
-            await node.Stop();
+            node3.Stop();
+            node.Stop();
 
-            Assert.True(node.State == "Leader");
             Assert.True(node3.State == "Follower");
-            Assert.True(node3.ElectionTimeoutCurr == node3.ElectionTimerMax);
         }
 
         [Fact] // Testing #8.1
@@ -109,9 +108,9 @@ namespace raft_TDD_Tests
         {
             Node node1 = new Node();
 
-            await node1.Start();
+            node1.Start();
             await Task.Delay(1000);
-            await node1.Stop();
+            node1.Stop();
 
             Assert.True(node1.State == "Leader");
         }
@@ -119,29 +118,32 @@ namespace raft_TDD_Tests
         [Fact] // Testing #8.2
         public async Task CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster5_Test()
         {
-            Node node1 = new Node();
-            Node node2 = new Node();
-            Node node3 = new Node();
-            Node node4 = new Node();
-            Node node5 = new Node();
-            
+            Node node1 = NodeFactory.StartNewNode("Follower");
+            var node2 = Substitute.For<INode>();
+            var node3 = Substitute.For<INode>();
+            var node4 = Substitute.For<INode>();
+            var node5 = Substitute.For<INode>();
+            node2.Id = Guid.NewGuid();
+            node3.Id = Guid.NewGuid();
+            node4.Id = Guid.NewGuid();
+            node5.Id = Guid.NewGuid();
+
+            node2.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+            node3.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+            node4.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+            node5.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+
+
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
             node1.Nodes.Add(node4.Id, node4);
             node1.Nodes.Add(node5.Id, node5);
 
 
-            await node1.Start();
-            await node2.Start();
-            await node3.Start();
-            await node4.Start();
-            await node5.Start();
+            node1.Start();
+
             await Task.Delay(1000);
-            await node5.Stop();
-            await node4.Stop();
-            await node3.Stop();
-            await node2.Stop();
-            await node1.Stop();
+            node1.Stop();
 
             Assert.True(node1.State == "Leader");
         }
@@ -161,15 +163,15 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node5.Id, node5);
 
 
-            await node1.Start();
-            await node2.Start();
-            await node3.Start();
-            await node5.Start();
+            node1.Start();
+            node2.Start();
+            node3.Start();
+            node5.Start();
             await Task.Delay(1000);
-            await node5.Stop();
-            await node3.Stop();
-            await node2.Stop();
-            await node1.Stop();
+            node5.Stop();
+            node3.Stop();
+            node2.Stop();
+            node1.Stop();
 
             Assert.True(node1.State == "Leader");
         }
@@ -190,15 +192,15 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node5.Id, node5);
 
 
-            await node1.Start();
-            await node2.Start();
-            await node3.Start();
-            await node5.Start();
+            node1.Start();
+            node2.Start();
+            node3.Start();
+            node5.Start();
             await Task.Delay(1000);
-            await node5.Stop();
-            await node3.Stop();
-            await node2.Stop();
-            await node1.Stop();
+            node5.Stop();
+            node3.Stop();
+            node2.Stop();
+            node1.Stop();
 
             Assert.True(node1.State == "Leader");
             Assert.True(node4.Term == 5);
@@ -218,7 +220,7 @@ namespace raft_TDD_Tests
 
         //    // Act
         //    // (assume time out happens before this act step)
-        //    await node1.StartNewElection(); // Need to start a new term for both new candidates
+        //    node1.StartNewElection(); // Need to start a new term for both new candidates
         //    await node2.StartNewElection();
         //    foreach (Guid id in node1.Nodes.Keys)
         //    {

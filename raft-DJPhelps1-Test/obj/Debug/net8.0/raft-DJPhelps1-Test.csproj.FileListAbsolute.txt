@@ -106,3 +106,4 @@ C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1-Test\obj\Debug\net8.0\
 C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1-Test\obj\Debug\net8.0\raft-DJPhelps1-Test.pdb
 C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1-Test\obj\Debug\net8.0\raft-DJPhelps1-Test.genruntimeconfig.cache
 C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1-Test\obj\Debug\net8.0\ref\raft-DJPhelps1-Test.dll
+C:\Users\ember\source\repos\raft-DJPhelps1\raft-DJPhelps1-Test\bin\Debug\net8.0\Meziantou.Xunit.ParallelTestFramework.dll

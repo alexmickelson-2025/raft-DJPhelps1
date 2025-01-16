@@ -24,6 +24,24 @@
           "build/netstandard1.0/coverlet.collector.targets": {}
         }
       },
+      "Meziantou.Xunit.ParallelTestFramework/2.3.0": {
+        "type": "package",
+        "dependencies": {
+          "xunit.extensibility.execution": "2.4.2"
+        },
+        "compile": {
+          "lib/net6.0/Meziantou.Xunit.ParallelTestFramework.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/Meziantou.Xunit.ParallelTestFramework.dll": {}
+        },
+        "build": {
+          "build/Meziantou.Xunit.ParallelTestFramework.props": {}
+        },
+        "buildMultiTargeting": {
+          "buildMultiTargeting/Meziantou.Xunit.ParallelTestFramework.props": {}
+        }
+      },
       "Microsoft.CodeCoverage/17.8.0": {
         "type": "package",
         "compile": {
@@ -1855,6 +1873,22 @@
         "coverlet-icon.png",
         "coverlet.collector.6.0.0.nupkg.sha512",
         "coverlet.collector.nuspec"
+      ]
+    },
+    "Meziantou.Xunit.ParallelTestFramework/2.3.0": {
+      "sha512": "KC4RB6PHTws4HD/PVJ5Si+GEABXCJdzd2FAb2NxZae9VFog6k0AKdOsr99H0HLnKRo/iC20/5SjiilKEh4Djuw==",
+      "type": "package",
+      "path": "meziantou.xunit.paralleltestframework/2.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "build/Meziantou.Xunit.ParallelTestFramework.props",
+        "buildMultiTargeting/Meziantou.Xunit.ParallelTestFramework.props",
+        "lib/net6.0/Meziantou.Xunit.ParallelTestFramework.dll",
+        "lib/netstandard2.0/Meziantou.Xunit.ParallelTestFramework.dll",
+        "meziantou.xunit.paralleltestframework.2.3.0.nupkg.sha512",
+        "meziantou.xunit.paralleltestframework.nuspec"
       ]
     },
     "Microsoft.CodeCoverage/17.8.0": {
@@ -5647,6 +5681,7 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "Meziantou.Xunit.ParallelTestFramework >= 2.3.0",
       "Microsoft.NET.Test.Sdk >= 17.8.0",
       "NSubstitute >= 5.3.0",
       "coverlet.collector >= 6.0.0",
@@ -5710,6 +5745,10 @@
       "net8.0": {
         "targetAlias": "net8.0",
         "dependencies": {
+          "Meziantou.Xunit.ParallelTestFramework": {
+            "target": "Package",
+            "version": "[2.3.0, )"
+          },
           "Microsoft.NET.Test.Sdk": {
             "target": "Package",
             "version": "[17.8.0, )"

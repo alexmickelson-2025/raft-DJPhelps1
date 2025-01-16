@@ -8,28 +8,29 @@ namespace raft_DJPhelps1
 {
     public class Node : INode
     {
-        public bool IsStarted { get; set; }
+        public bool IsStarted { get; set; } // false = NotStarted or Cancel; true = Started
         public string State { get; set; }     
         public Guid CurrentLeader { get; set; }
-        public Guid Id { get; internal set; }
+        public Guid Id { get; set; }
+        public int Term { get; set; }
         public int ElectionTimeoutCurr { get; set; }
         public int ElectionTimerMax {  get; set; }
         public int Heartbeat {  get; set; }
         public int VoteCount { get; set; }
-        public int Term { get; set; }
-        public Dictionary<Guid, Node> Nodes { get; set; } = new Dictionary<Guid, Node>();
+        public Dictionary<Guid, INode> Nodes { get; set; } = new Dictionary<Guid, INode>();
         public Dictionary<(int,Guid), Guid> Votes { get; set; } = new Dictionary<(int,Guid), Guid>();
         public CancellationTokenSource DelayStop { get; set; }
 
         public Node()
         {
+            DelayStop = new CancellationTokenSource();
             Random initializer = new Random();
             ElectionTimeoutCurr = initializer.Next(150, 300);
-            RefreshElectionTimeout();
             State = "Follower";
             Heartbeat = 50;
-            DelayStop = new CancellationTokenSource();
             Term = 1;
+            IsStarted = false;
+            RefreshElectionTimeout();
             Id = Guid.NewGuid();
         }
 
@@ -39,25 +40,28 @@ namespace raft_DJPhelps1
             State = "Leader";
             foreach (var node in Nodes.Values)
             {
-                await node.AppendEntries(Id, Term);
+                node.AppendEntries(Id, Term);
             }
         }
 
-        public async Task RequestVotes()
+        public void RequestVotes()
         {
             Votes.Add((Term, Id), Id);
-
-            foreach (Node n in Nodes.Values)
-            {
-                if(await n.RequestVoteRPC(Id, Term))
+            Task.Run(async () =>
+            { 
+                foreach (INode n in Nodes.Values)
                 {
-                    Votes.Add((Term,n.Id), Id);
-                }
+                    if(await n.RequestVoteRPC(Id, Term))
+                    {
+                        Votes.Add((Term,n.Id), Id);
+                    }
             }
+            });
         }
 
         public async Task<bool> RequestVoteRPC(Guid id, int term)
         {
+            await Task.Run(() => { });
             if(term >= Term)
             {
                 if (Votes.ContainsKey((term,Id)) && Votes[(term,Id)] == id)
@@ -80,16 +84,19 @@ namespace raft_DJPhelps1
             }
             else
             {
+                // log deny vote to id X
                 return false;
             }
         }
 
-        public async Task StartNewElection()
+        public void StartNewElection()
         {
             State = "Candidate";
+
             Term++;
-            await RequestVotes();
-            await Task.Delay(ElectionTimeoutCurr);
+
+            Task.Run(RequestVotes);
+            Thread.Sleep(ElectionTimeoutCurr);
 
             int votecountforme = 0;
 
@@ -101,7 +108,7 @@ namespace raft_DJPhelps1
 
             if (votecountforme > Nodes.Count() / 2)
             {
-                await MakeLeader();
+                Task.Run(MakeLeader);
             }
             else
             {
@@ -109,52 +116,56 @@ namespace raft_DJPhelps1
             }
         }
 
-        public async Task Start()
+        public void Start()
         {
-            IsStarted = true;
-            int i = 100;
-            while (IsStarted && i > 0)
+            Task.Run(async () =>
             {
-                if(State == "Leader")
+                if (IsStarted)
+                    return;
+
+                IsStarted = true;
+                while (IsStarted)
                 {
-                    try
+                    if (State == "Leader")
                     {
-                        await Task.Delay(Heartbeat, DelayStop.Token);
+                        try
+                        {
+                            await Task.Delay(Heartbeat, DelayStop.Token);
+                            await SendHeartbeat();
+                            Console.WriteLine($"Heartbeat from: {Id}\n");
+                        }
+                        catch (OperationCanceledException e)
+                        {
+                            Console.WriteLine("Heartbeat cancelled!",e.Message);
+                        }
                     }
-                    catch (Exception e)
+                    if (State == "Candidate")
                     {
+                        try
+                        {
+                            await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
+                            IsTimedOut();
+                        }
+                        catch (OperationCanceledException e)
+                        {
+                            Console.WriteLine($"Election cancelled!",e.Message);
+                        }
+                    }
+                    if (State == "Follower")
+                    {
+                        try
+                        {
+                            await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
+                            IsTimedOut();
 
+                        }
+                        catch (OperationCanceledException e)
+                        { 
+                            Console.WriteLine($"Election complete. Result: leader is {Id}\n", e.Message);
+                        }
                     }
-                    await SendHeartbeat();    
                 }
-                if(State == "Candidate")
-                {
-                    try
-                    {
-                        await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
-                        await IsTimedOut();
-                    }
-                    catch (Exception e)
-                    {
-
-                    }
-                }
-                if(State == "Follower")
-                {
-                    try
-                    {
-                        await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
-                        await IsTimedOut();
-
-                    }
-                    catch (Exception e)
-                    {
-
-                    }
-                }
-
-                i--;
-            }
+            });
         }
 
         public void RefreshElectionTimeout()
@@ -162,29 +173,29 @@ namespace raft_DJPhelps1
             ElectionTimeoutCurr = ElectionTimerMax;
         }
 
-        public async Task IsTimedOut()
+        public void IsTimedOut()
         {
             var rand = new Random();
             ElectionTimerMax = rand.Next(150, 300);
             RefreshElectionTimeout();
-            await StartNewElection();
+            StartNewElection();
         }
 
         public async Task SendHeartbeat()
         {
-            foreach(Node n in Nodes.Values)
+            foreach(INode n in Nodes.Values)
             {
-                await n.AppendEntries(this.Id);
+                n.AppendEntries(this.Id);
             }
         }
 
-        public async Task Stop()
+        public void Stop()
         {
             IsStarted = false;
             DelayStop.Cancel();
         }
 
-        public async Task AppendEntries(Guid Leader)
+        public void AppendEntries(Guid Leader)
         {
             if (Nodes.ContainsKey(Leader) && Nodes[Leader].Term >= this.Term)
             {
@@ -197,7 +208,7 @@ namespace raft_DJPhelps1
             RefreshElectionTimeout();
         }
 
-        public async Task AppendEntries(Guid NewLeader, int newTerm)
+        public void AppendEntries(Guid NewLeader, int newTerm)
         {
             DelayStop.Cancel();
             RefreshElectionTimeout();
