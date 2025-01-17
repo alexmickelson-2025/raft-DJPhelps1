@@ -10,110 +10,135 @@ namespace raft_DJPhelps1
     {
         public bool IsStarted { get; set; } // false = NotStarted or Cancel; true = Started
         public string State { get; set; }     
+        public int VoteCountForMe { get; set; }
         public Guid CurrentLeader { get; set; }
         public Guid Id { get; set; }
         public int Term { get; set; }
         public int ElectionTimeoutCurr { get; set; }
         public int ElectionTimerMax {  get; set; }
         public int Heartbeat {  get; set; }
-        public int VoteCount { get; set; }
-        public Dictionary<Guid, INode> Nodes { get; set; } = new Dictionary<Guid, INode>();
-        public Dictionary<(int,Guid), Guid> Votes { get; set; } = new Dictionary<(int,Guid), Guid>();
+        public Dictionary<Guid, INode> Nodes { get; set; }
+        public Dictionary<int, Guid> Votes { get; set; }
         public CancellationTokenSource DelayStop { get; set; }
+        private bool HasWonElection_Flag { get; set; }
+        public bool AppendEntriesResponseFlag { get; set; } // placeholder
 
         public Node()
         {
+            AppendEntriesResponseFlag = false;
             DelayStop = new CancellationTokenSource();
             Random initializer = new Random();
-            ElectionTimeoutCurr = initializer.Next(150, 300);
+            ElectionTimerMax = initializer.Next(150, 300);
             State = "Follower";
             Heartbeat = 50;
             Term = 1;
             IsStarted = false;
             RefreshElectionTimeout();
             Id = Guid.NewGuid();
+            Nodes = new Dictionary<Guid, INode>();
+            Votes = new Dictionary<int, Guid>();
         }
 
 
-        public async Task MakeLeader()
+        public async void MakeLeader()
         {
             State = "Leader";
-            foreach (var node in Nodes.Values)
-            {
-                node.AppendEntries(Id, Term);
-            }
+            await SendHeartbeat();
+            VoteCountForMe++;
         }
 
         public void RequestVotes()
         {
-            Votes.Add((Term, Id), Id);
-            Task.Run(async () =>
-            { 
-                foreach (INode n in Nodes.Values)
-                {
-                    if(await n.RequestVoteRPC(Id, Term))
-                    {
-                        Votes.Add((Term,n.Id), Id);
-                    }
-            }
-            });
+            IncrementVoteCount();
+
+            Nodes.Select(n => {
+                n.Value.RequestVoteRPC(this.Id, this.Term);
+                return true;
+                });
         }
 
-        public async Task<bool> RequestVoteRPC(Guid id, int term)
+        public async void RequestVoteRPC(Guid candidate_id, int election_term)
         {
+            //In this method: if vote request received, reset election timeout timer
             await Task.Run(() => { });
-            if(term >= Term)
+            if(election_term >= Term)
             {
-                if (Votes.ContainsKey((term,Id)) && Votes[(term,Id)] == id)
+                if (election_term > Term)
                 {
-                    Term = term;
-                    DelayStop.Cancel();
-                    return true;
+                    State = "follower";
+                    Term = election_term;
+                    Console.WriteLine("Higher term signal detected. Reverting to follower.");
                 }
-                else if(!Votes.ContainsKey((term, Id))) {
-                    Votes.Add((term, Id), id);
-                    Term = term;
+                else if(State == "Candidate")
+                {
+                    Console.WriteLine($"Received vote request from {candidate_id}.");
+                    return;
+                }
+                
+
+                if (Votes.ContainsKey(election_term) && Votes[election_term] == candidate_id)
+                {
+                    RefreshElectionTimeout();
+                    Term = election_term;
                     DelayStop.Cancel();
-                    return true;
+                    Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
+                    Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
+                }
+                else if(!Votes.ContainsKey(election_term)) {
+                    RefreshElectionTimeout();
+                    Votes.Add(election_term, candidate_id);
+                    Term = election_term;
+                    DelayStop.Cancel();
+                    Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true);
+                    Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
                 }
                 else
                 {
                     DelayStop.Cancel();
-                    return false;
+                    Nodes[candidate_id].ReceiveVoteRPC(candidate_id, election_term, false);
+                    Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
                 }
+                
             }
             else
             {
-                // log deny vote to id X
-                return false;
+                Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
             }
+        }
+
+        public void ReceiveVoteRPC(Guid id, int term, bool voteGranted)
+        { // Increemnt VoteForMe property instead of castvote
+            
+            if (voteGranted)
+                Nodes[id].IncrementVoteCount();
+
+            // Check if enough votes -> cancel and handle with catch block
+            // If vote expires, term recycles.
+            if (VoteCountForMe > Nodes.Count() / 2)
+            {
+                DelayStop.Cancel();
+                MakeLeader();
+            }
+        }
+
+        public void IncrementVoteCount()
+        {
+            VoteCountForMe++;
         }
 
         public void StartNewElection()
         {
-            State = "Candidate";
-
+            VoteCountForMe = 0;
             Term++;
 
             Task.Run(RequestVotes);
-            Thread.Sleep(ElectionTimeoutCurr);
 
-            int votecountforme = 0;
-
-            foreach(var vote in Votes)
+            while (ElectionTimeoutCurr > 0)
             {
-                if (vote.Key.Item1 == Term && vote.Value == Id)
-                    votecountforme++;
+                Thread.Sleep(10);
+                ElectionTimeoutCurr -= 10;
             }
 
-            if (votecountforme > Nodes.Count() / 2)
-            {
-                Task.Run(MakeLeader);
-            }
-            else
-            {
-                State = "Follower";
-            }
         }
 
         public void Start()
@@ -139,11 +164,13 @@ namespace raft_DJPhelps1
                             Console.WriteLine("Heartbeat cancelled!",e.Message);
                         }
                     }
-                    if (State == "Candidate")
+                    else if (State == "Candidate")
                     {
+                        // Request all votes -> wait for election to end
+                        // if timed out, start new election
+                         
                         try
-                        {
-                            await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
+                        { // move to StartNewElection Only
                             IsTimedOut();
                         }
                         catch (OperationCanceledException e)
@@ -151,13 +178,14 @@ namespace raft_DJPhelps1
                             Console.WriteLine($"Election cancelled!",e.Message);
                         }
                     }
-                    if (State == "Follower")
+                    else if (State == "Follower")
                     {
                         try
                         {
-                            await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
-                            IsTimedOut();
 
+                            await Task.Delay(ElectionTimeoutCurr, DelayStop.Token);
+                            //IsTimedOut();
+                            State = "Candidate";
                         }
                         catch (OperationCanceledException e)
                         { 
@@ -197,21 +225,43 @@ namespace raft_DJPhelps1
 
         public void AppendEntries(Guid Leader)
         {
+            bool validEntryFlag = false;
             if (Nodes.ContainsKey(Leader) && Nodes[Leader].Term >= this.Term)
             {
+                validEntryFlag = true;
                 State = "Follower";
                 Term = Nodes[Leader].Term;
+
+                DelayStop.Cancel();
+                CurrentLeader = Leader;
+                RefreshElectionTimeout();
             }    
 
-            DelayStop.Cancel();
-            CurrentLeader = Leader;
-            RefreshElectionTimeout();
+            if (Nodes.ContainsKey(Leader))
+                Nodes[Leader].AppendResponseRPC(Id, validEntryFlag);
+        }
+
+        public void AppendResponseRPC(Guid RPCReceiver, bool response)
+        {
+             AppendEntriesResponseFlag = response;
         }
 
         public void AppendEntries(Guid NewLeader, int newTerm)
         {
-            DelayStop.Cancel();
-            RefreshElectionTimeout();
+            bool validentryflag = false;
+            if (Nodes.ContainsKey(NewLeader) && Nodes[NewLeader].Term >= this.Term)
+            {
+                validentryflag = true;
+                State = "Follower";
+                Term = Nodes[NewLeader].Term;
+
+                DelayStop.Cancel();
+                CurrentLeader = NewLeader;
+                RefreshElectionTimeout();
+            }
+
+            if (Nodes.ContainsKey(NewLeader))
+                Nodes[NewLeader].AppendResponseRPC(Id, validentryflag);
         }
     }
 }

@@ -2,17 +2,20 @@
 {
     public interface INode
     {
+        public Guid Id { get; set; }
+        public int Term {  get; set; }
+        public Dictionary<Guid, INode> Nodes { get; set; }
         Task SendHeartbeat();
-        Task MakeLeader();
+        void MakeLeader();
         void RequestVotes();
         void StartNewElection();
         void Start();
         void Stop();
-        public Guid Id { get; set; }
-        public int Term {  get; set; }
-
+        void ReceiveVoteRPC(Guid id, int term, bool voteGranted);
+        void IncrementVoteCount();
         void AppendEntries(Guid leader);
         void AppendEntries(Guid g, int i);
-        Task<bool> RequestVoteRPC(Guid id, int term);
+        void RequestVoteRPC(Guid id, int term);
+        void AppendResponseRPC(Guid RPCReceiver, bool response);
     }
 }
