@@ -7,200 +7,200 @@ namespace raft_TDD_Tests
 {
     public class RaftElectionTests
     {
-        //[Fact] // Testing #1
-        //public void NodeLeaderSendsHeartbeatWithinInterval_Test()
-        //{
-        //    Node node = NodeFactory.StartNewNode("Leader");
-        //    var node3 = Substitute.For<Node>();
-        //    node.Nodes.Add(node3.Id, node3);
-            
-        //    node.Start();
-        //    Thread.Sleep(100);
+        [Fact] // Testing #1
+        public void NodeLeaderSendsHeartbeatWithinInterval_Test()
+        {
+            Node node = NodeFactory.StartNewNode("Leader");
+            var node3 = Substitute.For<Node>();
+            node.Nodes.Add(node3.Id, node3);
 
-        //    node.Stop();
-        //    node3.Received().AppendEntries(node.Id);
-        //}
+            node.Start();
+            Thread.Sleep(100);
 
-        //[Fact] // Testing #2
-        //public void NodeReceivesAppendEntriesPersistsLeadershipStatus_Test()
-        //{
-        //    Node node = NodeFactory.StartNewNode("Leader");
-        //    var node2 = Substitute.For<Node>();
-        //    node.Nodes.Add(node2.Id, node2);
+            node.Stop();
+            node3.Received().AppendEntries(node.Id);
+        }
 
-        //    node.Start();
-        //    Thread.Sleep(100);
+        [Fact] // Testing #2
+        public void NodeReceivesAppendEntriesPersistsLeadershipStatus_Test()
+        {
+            Node node = NodeFactory.StartNewNode("Leader");
+            var node2 = Substitute.For<Node>();
+            node.Nodes.Add(node2.Id, node2);
 
-        //    node.Stop();
-        //    Assert.True(node2.CurrentLeader == node.Id);
-        //}
+            node.Start();
+            Thread.Sleep(100);
 
-        //[Fact] // Testing #3
-        //public async Task NodeInitializesInFollowerState_Test()
-        //{
-        //    Node node = new Node();
+            node.Stop();
+            Assert.True(node2.CurrentLeader == node.Id);
+        }
 
-        //    Assert.True(node.State == "Follower");
-        //}
+        [Fact] // Testing #3
+        public async Task NodeInitializesInFollowerState_Test()
+        {
+            Node node = new Node();
 
-        //[Fact] // Testing #4
-        //public void NodeStartsElectionWithinElectionTimeout_Test()
-        //{
-        //    Node node = new Node();
+            Assert.True(node.State == "Follower");
+        }
 
-        //    node.Start();
-        //    Thread.Sleep(350);
-        //    node.Stop();
+        [Fact] // Testing #4
+        public void NodeStartsElectionWithinElectionTimeout_Test()
+        {
+            Node node = new Node();
 
-        //    Assert.True(node.State == "Candidate");
-        //}
+            node.Start();
+            Thread.Sleep(350);
+            node.Stop();
 
-        //[Fact] // Testing #5
-        //public void ElectionTimeResetsBetweenInterval_Test()
-        //{
-        //    Node node = new Node();
-            
-        //    node.Start();
-        //    Thread.Sleep(node.ElectionTimerMax + 1);
-        //    node.Stop();
+            Assert.True(node.State == "Candidate");
+        }
 
-        //    Assert.True(node.ElectionTimerMax >= 150 && node.ElectionTimerMax <= 300);
-        //}
+        [Fact] // Testing #5
+        public void ElectionTimeResetsBetweenInterval_Test()
+        {
+            Node node = new Node();
 
-        //[Fact] // Testing #6
-        //public void ElectionStartIncrementsTerm_Test()
-        //{
-        //    Node node = new Node();
-        //    var expectedTerm = node.Term;
+            node.Start();
+            Thread.Sleep(node.ElectionTimerMax + 40);
+            node.Stop();
 
-        //    node.Start();
-        //    Thread.Sleep(node.ElectionTimerMax+50);
-        //    node.Stop();
-            
-        //    var actualTerm = node.Term;
+            Assert.True(node.ElectionTimerMax >= 150 && node.ElectionTimerMax <= 300);
+        }
 
-        //    Assert.True(expectedTerm < actualTerm);
-        //}
+        [Fact] // Testing #6
+        public void ElectionStartIncrementsTerm_Test()
+        {
+            Node node = new Node();
+            var expectedTerm = node.Term;
 
-        //[Fact] // Testing #7
-        //public void FollowerResetsElectionTimerAfterAppendEntriesRPC_Test()
-        //{
-        //    Node node = NodeFactory.StartNewNode("Leader");
-        //    Node node3 = NodeFactory.StartNewNode("Follower");
-        //    node.Nodes.Add(node3.Id, node3);
-        //    node3.Nodes.Add(node.Id, node);
+            node.Start();
+            Thread.Sleep(node.ElectionTimerMax + 50);
+            node.Stop();
 
-        //    node.Start();
-        //    node3.Start();
-        //    Thread.Sleep(400);
-        //    node3.Stop();
-        //    node.Stop();
+            var actualTerm = node.Term;
 
-        //    Assert.True(node3.State == "Follower");
-        //}
+            Assert.True(expectedTerm < actualTerm);
+        }
 
-        //[Fact] // Testing #8.1
-        //public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster1_Test()
-        //{
-        //    Node node1 = new Node();
+        [Fact] // Testing #7
+        public void FollowerResetsElectionTimerAfterAppendEntriesRPC_Test()
+        {
+            Node node = NodeFactory.StartNewNode("Leader");
+            Node node3 = NodeFactory.StartNewNode("Follower");
+            node.Nodes.Add(node3.Id, node3);
+            node3.Nodes.Add(node.Id, node);
 
-        //    node1.Start();
-        //    Thread.Sleep(1000);
-        //    node1.Stop();
+            node.Start();
+            node3.Start();
+            Thread.Sleep(400);
+            node3.Stop();
+            node.Stop();
 
-        //    Assert.True(node1.State == "Leader");
-        //}
+            Assert.True(node3.State == "Follower");
+        }
 
-        //[Fact] // Testing #8.2
-        //public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster5_Test()
-        //{
-        //    Node node1 = NodeFactory.StartNewNode("Follower");
-        //    var node2 = Substitute.For<INode>();
-        //    var node3 = Substitute.For<INode>();
-        //    var node4 = Substitute.For<INode>();
-        //    var node5 = Substitute.For<INode>();
-        //    node2.Id = Guid.NewGuid();
-        //    node3.Id = Guid.NewGuid();
-        //    node4.Id = Guid.NewGuid();
-        //    node5.Id = Guid.NewGuid();
+        [Fact] // Testing #8.1
+        public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster1_Test()
+        {
+            Node node1 = new Node();
 
-        //    node2.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
-        //    node3.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
-        //    node4.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
-        //    node5.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
+            node1.Start();
+            Thread.Sleep(1000);
+            node1.Stop();
 
+            Assert.True(node1.State == "Leader");
+        }
 
-        //    node1.Nodes.Add(node2.Id, node2);
-        //    node1.Nodes.Add(node3.Id, node3);
-        //    node1.Nodes.Add(node4.Id, node4);
-        //    node1.Nodes.Add(node5.Id, node5);
+        [Fact] // Testing #8.2
+        public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster5_Test()
+        {
+            Node node1 = NodeFactory.StartNewNode("Follower");
+            var node2 = Substitute.For<INode>();
+            var node3 = Substitute.For<INode>();
+            var node4 = Substitute.For<INode>();
+            var node5 = Substitute.For<INode>();
+            node2.Id = Guid.NewGuid();
+            node3.Id = Guid.NewGuid();
+            node4.Id = Guid.NewGuid();
+            node5.Id = Guid.NewGuid();
+
+            node2.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
+            node3.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
+            node4.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
+            node5.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
 
 
-        //    node1.Start();
-
-        //    Thread.Sleep(1000);
-        //    node1.Stop();
-
-        //    Assert.True(node1.State == "Leader");
-        //}
-
-        //[Fact] // Testing #10
-        //public void NodeConclusionElectionWithUnresponsiveNode_Test()
-        //{
-        //    Node node1 = new Node();
-        //    Node node2 = new Node();
-        //    Node node3 = new Node();
-        //    Node node4 = new Node();
-        //    Node node5 = new Node();
-
-        //    node1.Nodes.Add(node2.Id, node2);
-        //    node1.Nodes.Add(node3.Id, node3);
-        //    node1.Nodes.Add(node4.Id, node4);
-        //    node1.Nodes.Add(node5.Id, node5);
+            node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+            node1.Nodes.Add(node4.Id, node4);
+            node1.Nodes.Add(node5.Id, node5);
 
 
-        //    node1.Start();
-        //    node2.Start();
-        //    node3.Start();
-        //    node5.Start();
-        //    Thread.Sleep(1000);
-        //    node5.Stop();
-        //    node3.Stop();
-        //    node2.Stop();
-        //    node1.Stop();
+            node1.Start();
 
-        //    Assert.True(node1.State == "Leader");
-        //}
+            Thread.Sleep(1000);
+            node1.Stop();
 
-        //[Fact] // Testing #10
-        //public void CandidateReceivesMajorityVotesWhileWaitingForUnresponsiveNode_Test()
-        //{
-        //    Node node1 = new Node();
-        //    Node node2 = new Node();
-        //    Node node3 = new Node();
-        //    Node node4 = new Node();
-        //    Node node5 = new Node();
-        //    node1.Term = 4;
+            Assert.True(node1.State == "Leader");
+        }
 
-        //    node1.Nodes.Add(node2.Id, node2);
-        //    node1.Nodes.Add(node3.Id, node3);
-        //    node1.Nodes.Add(node4.Id, node4);
-        //    node1.Nodes.Add(node5.Id, node5);
+        [Fact] // Testing #10
+        public void NodeConclusionElectionWithUnresponsiveNode_Test()
+        {
+            Node node1 = new Node();
+            Node node2 = new Node();
+            Node node3 = new Node();
+            Node node4 = new Node();
+            Node node5 = new Node();
+
+            node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+            node1.Nodes.Add(node4.Id, node4);
+            node1.Nodes.Add(node5.Id, node5);
 
 
-        //    node1.Start();
-        //    node2.Start();
-        //    node3.Start();
-        //    node5.Start();
-        //    Thread.Sleep(1000);
-        //    node5.Stop();
-        //    node3.Stop();
-        //    node2.Stop();
-        //    node1.Stop();
+            node1.Start();
+            node2.Start();
+            node3.Start();
+            node5.Start();
+            Thread.Sleep(1000);
+            node5.Stop();
+            node3.Stop();
+            node2.Stop();
+            node1.Stop();
 
-        //    Assert.True(node1.State == "Leader");
-        //    Assert.True(node4.Term == 5);
-        //}
+            Assert.True(node1.State == "Leader");
+        }
+
+        [Fact] // Testing #10
+        public void CandidateReceivesMajorityVotesWhileWaitingForUnresponsiveNode_Test()
+        {
+            Node node1 = new Node();
+            Node node2 = new Node();
+            Node node3 = new Node();
+            Node node4 = new Node();
+            Node node5 = new Node();
+            node1.Term = 4;
+
+            node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+            node1.Nodes.Add(node4.Id, node4);
+            node1.Nodes.Add(node5.Id, node5);
+
+
+            node1.Start();
+            node2.Start();
+            node3.Start();
+            node5.Start();
+            Thread.Sleep(1000);
+            node5.Stop();
+            node3.Stop();
+            node2.Stop();
+            node1.Stop();
+
+            Assert.True(node1.State == "Leader");
+            Assert.True(node4.Term == 5);
+        }
 
         // Testing 11
         [Fact]
@@ -373,39 +373,5 @@ namespace raft_TDD_Tests
 
             node2.Received().AppendEntries(Arg.Any<Guid>());
         }
-
-        // DEPRECATED TEST: NEEDS REWRITE
-        //
-        //[Fact] 
-        //public async Task Test1()
-        //{
-        //    Node node1 = NodeFactory.StartNewNode("Candidate");
-        //    Node node2 = NodeFactory.StartNewNode("Candidate");
-        //    Node node3 = NodeFactory.StartNewNode("Follower");
-        //    Node node4 = NodeFactory.StartNewNode("Follower");
-        //    Node node5 = NodeFactory.StartNewNode("Follower");
-
-
-        //    // Act
-        //    // (assume time out happens before this act step)
-        //    node1.StartNewElection(); // Need to start a new term for both new candidates
-        //    await node2.StartNewElection();
-        //    foreach (Guid id in node1.Nodes.Keys)
-        //    {
-        //        await node1.RequestVotes();
-        //    }
-        //    foreach (Guid id in node2.Nodes.Keys)
-        //    {
-        //        await node2.RequestVotes();
-        //    }
-
-        //    if (node1.VoteCount > (node1.Nodes.Count()) / 2 && node2.VoteCount <= (node2.Nodes.Count()) / 2)
-        //        node1.MakeLeader();
-        //    else
-        //        node2.MakeLeader();
-
-        //    Assert.True(node1.State == "Leader");
-        //    Assert.True(node2.State == "Follower");
-        //}
     }
 }
