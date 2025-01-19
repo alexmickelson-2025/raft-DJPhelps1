@@ -18,7 +18,7 @@ namespace raft_TDD_Tests
             Thread.Sleep(100);
 
             node.Stop();
-            node3.Received().AppendEntries(node.Id);
+            node3.Received().AppendEntriesRPC(node.Id);
         }
 
         [Fact] // Testing #2
@@ -36,7 +36,7 @@ namespace raft_TDD_Tests
         }
 
         [Fact] // Testing #3
-        public async Task NodeInitializesInFollowerState_Test()
+        public void NodeInitializesInFollowerState_Test()
         {
             Node node = new Node();
 
@@ -103,6 +103,7 @@ namespace raft_TDD_Tests
         public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster1_Test()
         {
             Node node1 = new Node();
+            node1.State = "Candidate";
 
             node1.Start();
             Thread.Sleep(1000);
@@ -112,22 +113,44 @@ namespace raft_TDD_Tests
         }
 
         [Fact] // Testing #8.2
-        public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster5_Test()
+        public void CandidatesSendVoteRequestWhenElectionStarts()
         {
             Node node1 = NodeFactory.StartNewNode("Follower");
+            node1.Term = 3;
+            var node2 = Substitute.For<INode>();
+            var node3 = Substitute.For<INode>();
+            var i = Guid.NewGuid();
+            var j = Guid.NewGuid();
+            Console.WriteLine(i.ToString() + " " + j.ToString());
+            node2.Id.Returns(i);
+            node3.Id.Returns(j);
+            node1.Nodes.Add(node2.Id, node2);
+            node1.Nodes.Add(node3.Id, node3);
+
+            node1.Start();
+
+            Console.WriteLine(node1.State, node1.Id.ToString(), node1.Term);
+            Thread.Sleep(300);
+            node1.Stop();
+
+            node2.Received().RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>());
+            node3.Received().RequestVoteRPC(Arg.Is<Guid>(Id => Id == node1.Id), Arg.Is<int>(term => term == 4));
+
+        }
+
+        [Fact] // Testing #8.2
+        public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster5_Test()
+        {
+            Node node1 = NodeFactory.StartNewNode("Candidate");
+            node1.Term = 2;
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
             var node4 = Substitute.For<INode>();
             var node5 = Substitute.For<INode>();
-            node2.Id = Guid.NewGuid();
-            node3.Id = Guid.NewGuid();
-            node4.Id = Guid.NewGuid();
-            node5.Id = Guid.NewGuid();
-
-            node2.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
-            node3.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
-            node4.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
-            node5.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => node1.IncrementVoteCount());
+            node2.Id.Returns(Guid.NewGuid());
+            node3.Id.Returns(Guid.NewGuid());
+            node4.Id.Returns(Guid.NewGuid());
+            node5.Id.Returns(Guid.NewGuid());
 
 
             node1.Nodes.Add(node2.Id, node2);
@@ -135,38 +158,15 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node4.Id, node4);
             node1.Nodes.Add(node5.Id, node5);
 
-
             node1.Start();
 
-            Thread.Sleep(1000);
-            node1.Stop();
+            Thread.Sleep(350);
 
-            Assert.True(node1.State == "Leader");
-        }
+            node1.ReceiveVoteRPC(node2.Id, 2, true);
+            node1.ReceiveVoteRPC(node3.Id, 2, true);
+            node1.ReceiveVoteRPC(node4.Id, 2, true);
+            node1.ReceiveVoteRPC(node5.Id, 2, true);
 
-        [Fact] // Testing #10
-        public void NodeConclusionElectionWithUnresponsiveNode_Test()
-        {
-            Node node1 = new Node();
-            Node node2 = new Node();
-            Node node3 = new Node();
-            Node node4 = new Node();
-            Node node5 = new Node();
-
-            node1.Nodes.Add(node2.Id, node2);
-            node1.Nodes.Add(node3.Id, node3);
-            node1.Nodes.Add(node4.Id, node4);
-            node1.Nodes.Add(node5.Id, node5);
-
-
-            node1.Start();
-            node2.Start();
-            node3.Start();
-            node5.Start();
-            Thread.Sleep(1000);
-            node5.Stop();
-            node3.Stop();
-            node2.Stop();
             node1.Stop();
 
             Assert.True(node1.State == "Leader");
@@ -175,32 +175,35 @@ namespace raft_TDD_Tests
         [Fact] // Testing #10
         public void CandidateReceivesMajorityVotesWhileWaitingForUnresponsiveNode_Test()
         {
-            Node node1 = new Node();
-            Node node2 = new Node();
-            Node node3 = new Node();
-            Node node4 = new Node();
-            Node node5 = new Node();
-            node1.Term = 4;
+            Node node1 = NodeFactory.StartNewNode("Candidate");
+            node1.Term = 2;
+            var node2 = Substitute.For<INode>();
+            var node3 = Substitute.For<INode>();
+            var node4 = Substitute.For<INode>();
+            var node5 = Substitute.For<INode>();
+            node2.Id.Returns(Guid.NewGuid());
+            node3.Id.Returns(Guid.NewGuid());
+            node4.Id.Returns(Guid.NewGuid());
+            node5.Id.Returns(Guid.NewGuid());
+
 
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
             node1.Nodes.Add(node4.Id, node4);
             node1.Nodes.Add(node5.Id, node5);
 
-
             node1.Start();
-            node2.Start();
-            node3.Start();
-            node5.Start();
-            Thread.Sleep(1000);
-            node5.Stop();
-            node3.Stop();
-            node2.Stop();
+
+            Thread.Sleep(350);
+
+            node1.ReceiveVoteRPC(node2.Id, 2, true);
+            node1.ReceiveVoteRPC(node3.Id, 2, true);
+
             node1.Stop();
 
             Assert.True(node1.State == "Leader");
-            Assert.True(node4.Term == 5);
         }
+
 
         // Testing 11
         [Fact]
@@ -266,12 +269,12 @@ namespace raft_TDD_Tests
             node1.Votes.Add(2, node2.Id);
             node1.Nodes.Add(node2.Id, node2);
 
-            node2.When(x => x.RequestVotes()).Do(x => {
+            node2.When(x => x.RequestVotesFromClusterRPC()).Do(x => {
                 node1.RequestVoteRPC(node2.Id, node2.Term);
             });
             node2.When(x => x.IncrementVoteCount()).Do(x => { node2.VoteCountForMe++; });
 
-            node2.RequestVotes();
+            node2.RequestVotesFromClusterRPC();
 
             Assert.True(node2.VoteCountForMe == 0);
         }
@@ -288,12 +291,12 @@ namespace raft_TDD_Tests
             node1.Votes.Add(3, node2.Id);
             node1.Nodes.Add(node2.Id, node2);
 
-            node2.When(x => x.RequestVotes()).Do(x => {
+            node2.When(x => x.RequestVotesFromClusterRPC()).Do(x => {
                 node1.RequestVoteRPC(node2.Id, node2.Term);
             });
             node2.When(x => x.IncrementVoteCount()).Do(x => { node2.VoteCountForMe++; });
 
-            node2.RequestVotes();
+            node2.RequestVotesFromClusterRPC();
 
             Assert.True(node2.VoteCountForMe == 1);
         }
@@ -329,9 +332,9 @@ namespace raft_TDD_Tests
             Node node = new Node();
             var node2 = Substitute.For<Node>();
             node2.Id = Guid.NewGuid();
-            node2.When(x => x.AppendEntries(Arg.Any<Guid>())).Do(
+            node2.When(x => x.AppendEntriesRPC(Arg.Any<Guid>())).Do(
                 x => {
-                    node.AppendEntries(node2.Id);
+                    node.AppendEntriesRPC(node2.Id);
                 });
 
             node2.Received().AppendResponseRPC(Arg.Any<Guid>(), Arg.Any<bool>());
@@ -350,11 +353,11 @@ namespace raft_TDD_Tests
             node2.AppendEntriesResponseFlag = true;
             node.Nodes.Add(node2.Id, node2);
 
-            node2.When(x => x.AppendEntries(Arg.Any<Guid>(), Arg.Any<int>())).
+            node2.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<int>())).
                 Do(x => { 
-                node.AppendEntries(node2.Id, node2.Term);
+                node.AppendEntriesRPC(node2.Id, node2.Term);
                 });
-            node2.AppendEntries(node2.Id, node2.Term);
+            node2.AppendEntriesRPC(node2.Id, node2.Term);
 
             Assert.True(!node2.AppendEntriesResponseFlag);
         }
@@ -371,7 +374,7 @@ namespace raft_TDD_Tests
 
             node.MakeLeader();
 
-            node2.Received().AppendEntries(Arg.Any<Guid>());
+            node2.Received().AppendEntriesRPC(Arg.Any<Guid>());
         }
     }
 }

@@ -1,60 +1,108 @@
 using raft_DJPhelps1;
+using System.ComponentModel;
 
-public class SimulationNode
+public class SimulationNode : INode
 {
     public readonly Node InnerNode;
+    public int NodeElectionProgress;
+    public int NodeHeartbeatProgress;
+
+    public EventHandler? ResetEL;
+    public EventHandler? ResetH;
 
     public SimulationNode(Node? di_node)
     {
         InnerNode = di_node ?? new Node();
+        ResetELTimer();
+        ResetHeartbeatTimer();
     }
 
-    public Task AppendEntries(Guid leader)
+    public void ResetELTimer()
     {
-        //return ((INode)InnerNode).AppendEntries(leader);
-        throw new NotImplementedException();
+        NodeElectionProgress = InnerNode.ElectionTimerMax * InnerNode.TimeoutMultiplier;
+    }
+    public void ResetHeartbeatTimer()
+    {
+        NodeHeartbeatProgress = InnerNode.Heartbeat * InnerNode.TimeoutMultiplier;
     }
 
-    public Task AppendEntries(Guid nodeId, int CurrentTerm)
+    public Guid Id { get => ((INode)InnerNode).Id; set => ((INode)InnerNode).Id = value; }
+    public int Term { get => ((INode)InnerNode).Term; set => ((INode)InnerNode).Term = value; }
+    public Dictionary<Guid, INode> Nodes { get => ((INode)InnerNode).Nodes; set => ((INode)InnerNode).Nodes = value; }
+    public Guid CurrentLeader {
+        get => ((Node)InnerNode).CurrentLeader;
+        set => ((Node)InnerNode).CurrentLeader = value;
+    }
+    public int TimeoutMultiplier { get => ((INode)InnerNode).TimeoutMultiplier; set => ((INode)InnerNode).TimeoutMultiplier = value; }
+    public int InternalDelay { get => ((INode)InnerNode).InternalDelay; set => ((INode)InnerNode).InternalDelay = value; }
+
+    
+
+    public void AppendEntriesRPC(Guid leader)
     {
-        //return ((INode)InnerNode).AppendEntries(nodeId, CurrentTerm);
-        throw new NotImplementedException();
+        ResetEL?.Invoke(this, EventArgs.Empty);
+        ((INode)InnerNode).AppendEntriesRPC(leader);
+        ResetELTimer();
     }
 
-    public Task MakeLeader()
+    public void AppendEntriesRPC(Guid g, int i)
     {
-        //return ((INode)InnerNode).MakeLeader();
-        throw new NotImplementedException();
+        ResetEL?.Invoke(this, EventArgs.Empty);
+        ((INode)InnerNode).AppendEntriesRPC(g, i);
+        ResetELTimer();
     }
 
-    public Task<bool> RequestVoteRPC(Guid id, int term)
+    public void AppendResponseRPC(Guid RPCReceiver, bool response)
     {
-        //return ((INode)InnerNode).RequestVoteRPC(id, term);
-        throw new NotImplementedException();
+        ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response);
     }
 
-    public Task RequestVotes()
+    public void IncrementVoteCount()
     {
-        //return ((INode)InnerNode).RequestVotes();
-        throw new NotImplementedException();
+        ((INode)InnerNode).IncrementVoteCount();
+    }
+
+    public void MakeLeader()
+    {
+        ((INode)InnerNode).MakeLeader();
+    }
+
+    public void ReceiveVoteRPC(Guid id, int term, bool voteGranted)
+    {
+        ResetEL?.Invoke(this, EventArgs.Empty);
+        ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
+        ResetELTimer();
+    }
+
+    public void RequestVoteRPC(Guid id, int term)
+    {
+        ((INode)InnerNode).RequestVoteRPC(id, term);
+    }
+
+    public void RequestVotesFromClusterRPC()
+    {
+        ((INode)InnerNode).RequestVotesFromClusterRPC();
     }
 
     public Task SendHeartbeat()
     {
-        //return ((INode)InnerNode).SendHeartbeat();
-        throw new NotImplementedException();
+        ResetH?.Invoke(this, EventArgs.Empty);
+        ResetHeartbeatTimer();
+        return ((INode)InnerNode).SendHeartbeat();
     }
 
-    public Task Start()
+    public void Start()
     {
-        //return ((INode)InnerNode).Start();
-        throw new NotImplementedException();
+        ((INode)InnerNode).Start();
     }
 
-    public Task StartNewElection()
+    public void StartNewElection()
     {
-        //return ((INode)InnerNode).StartNewElection();
-        throw new NotImplementedException();
+        ((INode)InnerNode).StartNewElection();
     }
-    // public SimulationNode
+
+    public void Stop()
+    {
+        ((INode)InnerNode).Stop();
+    }
 }
