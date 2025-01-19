@@ -87,7 +87,6 @@ namespace raft_DJPhelps1
                     {
                         try
                         {
-
                             await Task.Delay(ElectionTimerCurr * TimeoutMultiplier, DelayStop.Token);
 
                             State = "Candidate";
@@ -269,7 +268,7 @@ namespace raft_DJPhelps1
         {
             State = "Leader";
             await SendHeartbeat();
-            VoteCountForMe++;
+            VoteCountForMe = 0;
         }
     }
 }

@@ -7,8 +7,7 @@ public class SimulationNode : INode
     public int NodeElectionProgress;
     public int NodeHeartbeatProgress;
 
-    public EventHandler? ResetEL;
-    public EventHandler? ResetH;
+    public EventHandler? Refresh;
 
     public SimulationNode(Node? di_node)
     {
@@ -40,14 +39,14 @@ public class SimulationNode : INode
 
     public void AppendEntriesRPC(Guid leader)
     {
-        ResetEL?.Invoke(this, EventArgs.Empty);
+        Refresh?.Invoke(this, EventArgs.Empty);
         ((INode)InnerNode).AppendEntriesRPC(leader);
         ResetELTimer();
     }
 
     public void AppendEntriesRPC(Guid g, int i)
     {
-        ResetEL?.Invoke(this, EventArgs.Empty);
+        Refresh?.Invoke(this, EventArgs.Empty);
         ((INode)InnerNode).AppendEntriesRPC(g, i);
         ResetELTimer();
     }
@@ -69,7 +68,7 @@ public class SimulationNode : INode
 
     public void ReceiveVoteRPC(Guid id, int term, bool voteGranted)
     {
-        ResetEL?.Invoke(this, EventArgs.Empty);
+        Refresh?.Invoke(this, EventArgs.Empty);
         ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
         ResetELTimer();
     }
@@ -86,7 +85,7 @@ public class SimulationNode : INode
 
     public Task SendHeartbeat()
     {
-        ResetH?.Invoke(this, EventArgs.Empty);
+        Refresh?.Invoke(this, EventArgs.Empty);
         ResetHeartbeatTimer();
         return ((INode)InnerNode).SendHeartbeat();
     }
