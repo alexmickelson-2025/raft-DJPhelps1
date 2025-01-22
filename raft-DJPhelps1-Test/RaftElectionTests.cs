@@ -1,6 +1,7 @@
 using NSubstitute;
 using NSubstitute.Core.Arguments;
 using raft_DJPhelps1;
+using raft_DJPhelps1_Test;
 using System.Xml.Linq;
 
 namespace raft_TDD_Tests
@@ -376,5 +377,21 @@ namespace raft_TDD_Tests
 
             node2.Received().AppendEntriesRPC(Arg.Any<Guid>());
         }
+
+
+        // Putting the test for logging here until I can figure out why it isn't linking
+        [Fact]
+        public void WhenClientSendsRequestThenLeaderAppendsToLog()
+        {
+            Node node = new Node();
+
+            node.RequestAdd(1);
+            var expected = new List<int>() {
+                1
+            };
+
+            Assert.True(node.CommandLog == expected);
+        }
+
     }
 }

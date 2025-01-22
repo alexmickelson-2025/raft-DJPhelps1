@@ -39,7 +39,7 @@ namespace raft_DJPhelps1
             InternalDelay = 0;
             Random initializer = new Random();
             ElectionTimerMax = initializer.Next(150, 300);
-            
+            CommandLog = new List<int>();
             RefreshElectionTimeout();
 
             Nodes = new Dictionary<Guid, INode>();
@@ -274,7 +274,7 @@ namespace raft_DJPhelps1
 
         public void RequestAdd(int v)
         {
-            throw new NotImplementedException();
+            CommandLog.Add(v);
         }
     }
 }
