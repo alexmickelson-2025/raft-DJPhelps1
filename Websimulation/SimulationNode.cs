@@ -104,4 +104,9 @@ public class SimulationNode : INode
     {
         ((INode)InnerNode).Stop();
     }
+
+    public void RequestAdd(int input_num)
+    {
+        ((INode)InnerNode).RequestAdd(input_num);
+    }
 }

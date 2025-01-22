@@ -19,5 +19,6 @@
         void AppendEntriesRPC(Guid g, int i);
         void RequestVoteRPC(Guid id, int term);
         void AppendResponseRPC(Guid RPCReceiver, bool response);
+        void RequestAdd(int input_num);
     }
 }

@@ -25,6 +25,7 @@ namespace raft_DJPhelps1
         public CancellationTokenSource DelayStop { get; set; }
         private bool HasWonElection_Flag { get; set; }
         public bool AppendEntriesResponseFlag { get; set; } // placeholder
+        public List<int> CommandLog { get; set; }
 
         public Node()
         {
@@ -269,6 +270,11 @@ namespace raft_DJPhelps1
             State = "Leader";
             await SendHeartbeat();
             VoteCountForMe = 0;
+        }
+
+        public void RequestAdd(int v)
+        {
+            throw new NotImplementedException();
         }
     }
 }

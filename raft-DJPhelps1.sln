@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35506.116 d17.12
+VisualStudioVersion = 17.12.35506.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-DJPhelps1", "raft-DJPhelps1\raft-DJPhelps1.csproj", "{CFD84704-57D7-4BB8-97EC-C29FC088B7E2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-DJPhelps1-Test", "raft-DJPhelps1-Test\raft-DJPhelps1-Test.csproj", "{5AC9C49D-81A6-44CD-9991-9E41F24B5B68}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-DJPhelps1-Test_Elections", "raft-DJPhelps1-Test\raft-DJPhelps1-Test_Elections.csproj", "{5AC9C49D-81A6-44CD-9991-9E41F24B5B68}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Websimulation", "Websimulation\Websimulation.csproj", "{40C3D998-72B3-4872-A46A-A524487C5267}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-DJPhelps1-Test_Logs", "raft-DJPhelps1-Test_Logs\raft-DJPhelps1-Test_Logs.csproj", "{48D2466E-D892-4CD9-8815-A8834F884946}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{40C3D998-72B3-4872-A46A-A524487C5267}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{40C3D998-72B3-4872-A46A-A524487C5267}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{40C3D998-72B3-4872-A46A-A524487C5267}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48D2466E-D892-4CD9-8815-A8834F884946}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48D2466E-D892-4CD9-8815-A8834F884946}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48D2466E-D892-4CD9-8815-A8834F884946}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48D2466E-D892-4CD9-8815-A8834F884946}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
