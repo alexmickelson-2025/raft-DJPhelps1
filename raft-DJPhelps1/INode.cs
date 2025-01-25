@@ -15,10 +15,10 @@
         void Stop();
         void ReceiveVoteRPC(Guid id, int term, bool voteGranted);
         void IncrementVoteCount();
-        void AppendEntriesRPC(Guid leader);
+        void AppendEntriesRPC(Guid leader, CommandToken ct);
         void AppendEntriesRPC(Guid g, int i);
         void RequestVoteRPC(Guid id, int term);
-        void AppendResponseRPC(Guid RPCReceiver, bool response);
+        void AppendResponseRPC(Guid RPCReceiver, bool response1, CommandToken response2);
         void RequestAdd(int input_num);
     }
 }

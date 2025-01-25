@@ -5,9 +5,16 @@
 @using raft_DJPhelps1
 
 <PageTitle>Home</PageTitle>
-
+@* 
 <MudSlider Value="@NetworkDelay" ValueLabel="true" Min="0" Max="50" Style="width:50%" @onchange=ChangeNetworkDelay>NetworkDelay (ms)</MudSlider>
 <MudSlider Value="@TimeoutMultiplier" ValueLabel="true" Min="5.0" Max="20.0" Style="width:50%" @onchange=ChangeTimeoutMultiplier>Timeout</MudSlider>
+<MudSlider Value="@ProgressBarSlider" ValueLabel="true" Min="0" Max="1" Step="0.01" Style="width:50%" @onchange=ProgressBarTest>Slider</MudSlider>
+
+<MudProgressLinear Value="@ProgressBarSlider" Min="0" Max="1" Class="my-7"></MudProgressLinear>
+
+Going to replace these with different sliders and progress bars.
+*@
+
 
 
 <button @onclick="StartSim">Start</button>
@@ -34,7 +41,7 @@
                             <MudProgressLinear Class="my-7"
                             Size="Size.Medium"
                             Color="Color.Success"
-                            Min="0" Max="100"
+                            Min="0" Max="1"
                             Value="@percentHeartbeat">
                                 <MudText>
                                     Heartbeat:
@@ -67,6 +74,11 @@
     bool StartFlag = false;
     int NetworkDelay = 0;
     int TimeoutMultiplier = 10;
+    float ProgressBarSlider = 0.2f;
+
+    public void ProgressBarTest(){
+        InvokeAsync(StateHasChanged);
+    }
 
     protected override void OnInitialized()
     {
@@ -83,22 +95,18 @@
 
     public void UpdateNodeTimeoutsGraphic(){
         foreach(var node in simulationNodes){
-            node.NodeElectionProgress -= 10*TimeoutMultiplier;
-            node.NodeHeartbeatProgress -= 10*TimeoutMultiplier;
+            node.NodeElectionProgress -= 40;
+            node.NodeHeartbeatProgress -= 40;
         }    
     }
 
     void Stop(){
-        if (simnode1 == null)
-            return;
-        if (simnode2 == null)
-            return;
-        if (simnode2 == null)
-            return;
+        foreach(var n in simulationNodes){
+            if (n == null)
+                return;
 
-        simnode1.Stop();
-        simnode2.Stop();
-        simnode3.Stop();
+            n.Stop();
+        }
 
         timer?.Dispose();
     }
@@ -112,6 +120,7 @@
             node.InnerNode.InternalDelay = NetworkDelay;
         }
         StateHasChanged();
+        UpdateTimer();
     }
     public void ChangeTimeoutMultiplier(){
         foreach(var node in simulationNodes){
@@ -127,7 +136,7 @@
         {
             InvokeAsync(StateHasChanged); // Any time the slider changes, we need to also change the timer.
             UpdateNodeTimeoutsGraphic();
-        }, null, 0, 10*TimeoutMultiplier);
+        }, null, 0, 40);
     }
 
     void StartSim(){
@@ -168,9 +177,9 @@
 
             timer = new Timer(_ =>
             {
-                InvokeAsync(StateHasChanged); // Needed to refresh things periodically
                 UpdateNodeTimeoutsGraphic();
-            }, null, 0, 40 * TimeoutMultiplier);
+                InvokeAsync(StateHasChanged); // Needed to refresh things periodically
+            }, null, 0, 40);
 
             foreach(var n in simulationNodes){
                 n.Start();

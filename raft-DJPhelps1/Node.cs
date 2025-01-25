@@ -14,37 +14,47 @@ namespace raft_DJPhelps1
         public Guid CurrentLeader { get; set; }
         public Guid Id { get; set; }
         public int Term { get; set; }
+        public int ImportantValue;
         public int ElectionTimerCurr { get; set; }
         public int ElectionTimerMax {  get; set; }
         public int TimeoutMultiplier {  get; set; }
         public int InternalDelay { get; set; }
-
+        public int NextIndex { get; set; } // Need to know how big the stack is in the leader
+        public int LogIndex { get; set; } // Need to know where the new commands are implicitly
+        public int LogActionCounter { get; set; }
         public int Heartbeat {  get; set; }
         public Dictionary<Guid, INode> Nodes { get; set; }
         public Dictionary<int, Guid> Votes { get; set; }
         public CancellationTokenSource DelayStop { get; set; }
         private bool HasWonElection_Flag { get; set; }
         public bool AppendEntriesResponseFlag { get; set; } // placeholder
-        public List<int> CommandLog { get; set; }
+        public Dictionary<int, CommandToken> CommandLog { get; set; }
 
         public Node()
         {
             AppendEntriesResponseFlag = false;
             State = "Follower";
-            Heartbeat = 50;
+            TimeoutMultiplier = 1;
+            Heartbeat = 50 * TimeoutMultiplier;
             Term = 1;
             IsStarted = false;
             Id = Guid.NewGuid();
-            TimeoutMultiplier = 1;
+            ImportantValue = 0;
             InternalDelay = 0;
+            NextIndex = 0; // The next index is a new one.
+            LogIndex = 0; // The first index is the token index at the start.
             Random initializer = new Random();
             ElectionTimerMax = initializer.Next(150, 300);
-            CommandLog = new List<int>();
+            CommandLog = new();
             RefreshElectionTimeout();
-
             Nodes = new Dictionary<Guid, INode>();
             Votes = new Dictionary<int, Guid>();
             DelayStop = new CancellationTokenSource();
+        }
+
+        public void ChangeHeartbeat()
+        {
+
         }
 
         public void Start()
@@ -94,7 +104,7 @@ namespace raft_DJPhelps1
                         }
                         catch (OperationCanceledException e)
                         {
-                            Console.WriteLine($" {Id}\n", e.Message);
+                            Console.WriteLine($"Follower {Id} received heartbeat from leader.\n", e.Message);
                         }
                     }
                 }
@@ -115,7 +125,7 @@ namespace raft_DJPhelps1
                 }).ToArray();
         }
 
-        public async void RequestVoteRPC(Guid candidate_id, int election_term)
+        public void RequestVoteRPC(Guid candidate_id, int election_term)
         {
             //In this method: if vote request received, reset election timeout timer
             if(election_term >= Term)
@@ -161,6 +171,30 @@ namespace raft_DJPhelps1
             {
                 Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
             }
+        }
+
+        public void CommitEntries()
+        {
+            CommitEntryRPC();
+            foreach (Node node in Nodes.Values)
+            {
+                node.CommitEntryRPC();
+            }
+            LogActionCounter = 0;
+        }
+
+        public void CommitEntryRPC()
+        {
+            CommandLog[LogIndex].is_committed = true;
+            CommandToken ct = CommandLog[LogIndex];
+
+            switch (ct.command)
+            {
+                case "add": ImportantValue += ct.value;
+                    break;
+            }
+
+            LogIndex++;
         }
 
         public void ReceiveVoteRPC(Guid voeter_id, int term, bool voteGranted)
@@ -216,16 +250,52 @@ namespace raft_DJPhelps1
 
         public async Task SendHeartbeat()
         {
-            Thread.Sleep(InternalDelay);
+            if(InternalDelay > 5)
+                await Task.Delay(InternalDelay);
+
             foreach(INode n in Nodes.Values)
             {
-                n.AppendEntriesRPC(this.Id);
+                n.AppendEntriesRPC(this.Id, CommandLog[LogIndex]);
             }
         }
 
 
 
-        public void AppendEntriesRPC(Guid Leader)
+        public void AppendEntriesRPC(Guid Leader, CommandToken log_addition)
+        {
+            bool validEntryFlag = false;
+
+            if (Nodes.ContainsKey(Leader) && log_addition.term >= this.Term)
+            {
+                validEntryFlag = true;
+                State = "Follower";
+                Term = log_addition.term;
+
+                DelayStop.Cancel();
+                CurrentLeader = Leader;
+                RefreshElectionTimeout();
+            }
+
+            if(log_addition.index == 0)
+            {
+                LogIndex = 0;
+                NextIndex = 1;
+                CommandLog.Add(0, log_addition);
+            }
+            else
+            {
+
+                LogIndex = log_addition.index;
+
+                //if (CommandLog.ContainsKey(log_addition.index) && CommandLog[log_addition.index])
+                CommandLog[LogIndex] = log_addition;
+            }
+
+            if (Nodes.ContainsKey(Leader))
+                Nodes[Leader].AppendResponseRPC(Id, validEntryFlag, log_addition);
+        }
+
+        public void AppendEntriesRPC(Guid Leader, int newTerm)
         {
             bool validEntryFlag = false;
             if (Nodes.ContainsKey(Leader) && Nodes[Leader].Term >= this.Term)
@@ -237,44 +307,58 @@ namespace raft_DJPhelps1
                 DelayStop.Cancel();
                 CurrentLeader = Leader;
                 RefreshElectionTimeout();
-            }    
-
-            if (Nodes.ContainsKey(Leader))
-                Nodes[Leader].AppendResponseRPC(Id, validEntryFlag);
-        }
-
-        public void AppendEntriesRPC(Guid NewLeader, int newTerm)
-        {
-            bool validentryflag = false;
-            if (Nodes.ContainsKey(NewLeader) && Nodes[NewLeader].Term >= this.Term)
-            {
-                validentryflag = true;
-                State = "Follower";
-                Term = Nodes[NewLeader].Term;
-                DelayStop.Cancel();
-                CurrentLeader = NewLeader;
-                RefreshElectionTimeout();
             }
 
-            if (Nodes.ContainsKey(NewLeader))
-                Nodes[NewLeader].AppendResponseRPC(Id, validentryflag);
+            var newct = new CommandToken();
+
+            if (Nodes.ContainsKey(Leader))
+                Nodes[Leader].AppendResponseRPC(Id, validEntryFlag, newct);
         }
 
-        public void AppendResponseRPC(Guid RPCReceiver, bool response)
+        public void AppendResponseRPC(Guid RPCReceiver, bool ValidLeader, CommandToken ValidEntry)
         {
-            AppendEntriesResponseFlag = response;
+            AppendEntriesResponseFlag = ValidLeader;
+            if (ValidEntry.command == "")
+                return;
+            if (!ValidEntry.is_committed)
+                LogIndex--;
+            else if (ValidEntry.is_committed)
+                LogActionCounter++;
         }
 
         public async void MakeLeader()
         {
             State = "Leader";
+
+            CommandToken newToken = new()
+            {
+                command = "",
+                term = Term,
+                value = 0,
+                index = NextIndex,
+                is_committed = false
+            };
+
+            CommandLog.Add(NextIndex, newToken);
+            NextIndex++;
             await SendHeartbeat();
             VoteCountForMe = 0;
         }
 
-        public void RequestAdd(int v)
+
+        public void RequestAdd(int input_num)
         {
-            CommandLog.Add(v);
+            CommandToken newToken = new()
+            {
+                command = "add",
+                term = Term,
+                value = input_num,
+                index = NextIndex,
+                is_committed = false
+            };
+
+            CommandLog.Add(NextIndex, newToken);
+            NextIndex++;
         }
     }
 }

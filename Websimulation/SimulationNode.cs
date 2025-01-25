@@ -40,20 +40,20 @@ public class SimulationNode : INode
     public void AppendEntriesRPC(Guid leader)
     {
         Refresh?.Invoke(this, EventArgs.Empty);
-        ((INode)InnerNode).AppendEntriesRPC(leader);
         ResetELTimer();
+        //((INode)InnerNode).AppendEntriesRPC(leader);
     }
 
     public void AppendEntriesRPC(Guid g, int i)
     {
         Refresh?.Invoke(this, EventArgs.Empty);
-        ((INode)InnerNode).AppendEntriesRPC(g, i);
         ResetELTimer();
+        ((INode)InnerNode).AppendEntriesRPC(g, i);
     }
 
     public void AppendResponseRPC(Guid RPCReceiver, bool response)
     {
-        ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response);
+        ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response, response);
     }
 
     public void IncrementVoteCount()
@@ -69,8 +69,8 @@ public class SimulationNode : INode
     public void ReceiveVoteRPC(Guid id, int term, bool voteGranted)
     {
         Refresh?.Invoke(this, EventArgs.Empty);
-        ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
         ResetELTimer();
+        ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
     }
 
     public void RequestVoteRPC(Guid id, int term)
@@ -108,5 +108,15 @@ public class SimulationNode : INode
     public void RequestAdd(int input_num)
     {
         ((INode)InnerNode).RequestAdd(input_num);
+    }
+
+    public void AppendEntriesRPC(Guid leader, CommandToken ct)
+    {
+        ((INode)InnerNode).AppendEntriesRPC(leader, ct);
+    }
+
+    public void AppendResponseRPC(Guid RPCReceiver, bool response1, bool response2)
+    {
+        ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response1, response2);
     }
 }
