@@ -584,17 +584,75 @@ namespace raft_DJPhelps1_Test
             {
                 command = "add",
                 value = 2,
-                index = 0,
+                index = 4,
                 is_committed = true,
                 is_valid = true,
                 term = 1
             };
             test_node.AppendEntriesRPC(mock1.Id, token);
-            
-            
+
+            mock1.Received().AppendResponseRPC(Arg.Any<Guid>(), true, Arg.Is<CommandToken>(x=>
+                x.is_valid == false ));
+            Assert.True(test_node.CommandLog.Count == 0);
         }
 
 
         // Testing #20
+        [Fact]
+        public void NodeRejectsAppendEntriesIfRejectsIndexesUntilAppropriateOneArrives_Test()
+        {
+            var test_node = new Node();
+            var mock1 = Substitute.For<INode>();
+            mock1.Id = Guid.NewGuid();
+            test_node.Nodes.Add(mock1.Id, mock1);
+            List<CommandToken> tokens = new List<CommandToken>()
+            {
+                new CommandToken()
+                {
+                    command = "add",
+                    value = 2,
+                    index = 3,
+                    is_committed = true,
+                    is_valid = true,
+                    term = 1
+                },
+                new CommandToken()
+                {
+                    command = "add",
+                    value = 2,
+                    index = 2,
+                    is_committed = true,
+                    is_valid = true,
+                    term = 1
+                },
+                new CommandToken()
+                {
+                    command = "add",
+                    value = 2,
+                    index = 1,
+                    is_committed = true,
+                    is_valid = true,
+                    term = 1
+                },
+                new CommandToken()
+                {
+                    command = "add",
+                    value = 2,
+                    index = 0,
+                    is_committed = true,
+                    is_valid = true,
+                    term = 1
+                }
+            };
+            
+            foreach(var t in tokens)
+            {
+                test_node.AppendEntriesRPC(mock1.Id, t);
+            }
+
+            mock1.Received().AppendResponseRPC(Arg.Any<Guid>(), true, Arg.Is<CommandToken>(x =>
+                x.is_valid == true && x.index == 0));
+            Assert.True(test_node.CommandLog.Count == 1);
+        }
     }
 }
