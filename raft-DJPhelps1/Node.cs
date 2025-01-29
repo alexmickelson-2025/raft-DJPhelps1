@@ -8,36 +8,41 @@ namespace raft_DJPhelps1
 {
     public class Node : INode
     {
+        public int ImportantValue;
         public bool IsStarted { get; set; } // false = NotStarted or Cancel; true = Started
-        public string State { get; set; }     
-        public int VoteCountForMe { get; set; }
+        private bool HasWonElection_Flag { get; set; }
+        public bool AppendEntriesResponseFlag { get; set; } // placeholder
+        public bool IsCurrentLogCounted { get; set; }
+        public bool HasLogEntriesUncommitted { get; set; }
+        public string State { get; set; }
         public Guid CurrentLeader { get; set; }
         public Guid Id { get; set; }
         public int Term { get; set; }
-        public int ImportantValue;
+        public int VoteCountForMe { get; set; }
         public int ElectionTimerCurr { get; set; }
-        public int ElectionTimerMax {  get; set; }
-        public int TimeoutMultiplier {  get; set; }
+        public int ElectionTimerMax { get; set; }
+        public int TimeoutMultiplier { get; set; }
         public int InternalDelay { get; set; }
         public int NextIndex { get; set; } // Need to know how big the stack is in the leader
         public int LogIndex { get; set; } // Need to know where the new commands are implicitly
         public int LogActionCounter { get; set; }
-        public int Heartbeat {  get; set; }
+        public int Heartbeat { get; set; }
         public Dictionary<Guid, INode> Nodes { get; set; }
         public Dictionary<int, Guid> Votes { get; set; }
         public CancellationTokenSource DelayStop { get; set; }
-        private bool HasWonElection_Flag { get; set; }
-        public bool AppendEntriesResponseFlag { get; set; } // placeholder
         public Dictionary<int, CommandToken> CommandLog { get; set; }
+        public Dictionary<int, ClientStandin> csi { get; set; }
 
         public Node()
         {
-            AppendEntriesResponseFlag = false;
             State = "Follower";
             TimeoutMultiplier = 1;
             Heartbeat = 50 * TimeoutMultiplier;
             Term = 1;
+            AppendEntriesResponseFlag = false;
             IsStarted = false;
+            IsCurrentLogCounted = false;
+            HasLogEntriesUncommitted = false;
             Id = Guid.NewGuid();
             ImportantValue = 0;
             InternalDelay = 0;
@@ -50,6 +55,7 @@ namespace raft_DJPhelps1
             Nodes = new Dictionary<Guid, INode>();
             Votes = new Dictionary<int, Guid>();
             DelayStop = new CancellationTokenSource();
+            csi = new Dictionary<int, ClientStandin>();
         }
 
         public void ChangeHeartbeat()
@@ -119,16 +125,17 @@ namespace raft_DJPhelps1
 
         public void RequestVotesFromClusterRPC()
         {
-            Nodes.Select(n => {
+            Nodes.Select(n =>
+            {
                 n.Value.RequestVoteRPC(this.Id, this.Term);
                 return true;
-                }).ToArray();
+            }).ToArray();
         }
 
         public void RequestVoteRPC(Guid candidate_id, int election_term)
         {
             //In this method: if vote request received, reset election timeout timer
-            if(election_term >= Term)
+            if (election_term >= Term)
             {
                 if (election_term > Term)
                 {
@@ -136,12 +143,12 @@ namespace raft_DJPhelps1
                     Term = election_term;
                     Console.WriteLine("Higher term signal detected. Reverting to follower.");
                 }
-                else if(State == "Candidate")
+                else if (State == "Candidate")
                 {
                     Console.WriteLine($"Received vote request from {candidate_id}.");
                     return;
                 }
-                
+
 
                 if (Votes.ContainsKey(election_term) && Votes[election_term] == candidate_id)
                 {
@@ -151,7 +158,8 @@ namespace raft_DJPhelps1
                     Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
                     Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
                 }
-                else if(!Votes.ContainsKey(election_term)) {
+                else if (!Votes.ContainsKey(election_term))
+                {
                     RefreshElectionTimeout();
                     Votes.Add(election_term, candidate_id);
                     Term = election_term;
@@ -165,7 +173,7 @@ namespace raft_DJPhelps1
                     Nodes[candidate_id].ReceiveVoteRPC(candidate_id, election_term, false);
                     Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
                 }
-                
+
             }
             else
             {
@@ -173,33 +181,51 @@ namespace raft_DJPhelps1
             }
         }
 
-        public void CommitEntries()
-        {
-            CommitEntryRPC();
-            foreach (Node node in Nodes.Values)
-            {
-                node.CommitEntryRPC();
-            }
-            LogActionCounter = 0;
-        }
+        //public void CommitEntries()
+        //{
+        //    CommitEntryRPC();
+        //    foreach (Node node in Nodes.Values)
+        //    {
+        //        node.CommitEntryRPC();
+        //    }
+        //    LogActionCounter = 0;
+        //}
 
-        public void CommitEntryRPC()
+        public void CommitEntries()
         {
             CommandLog[LogIndex].is_committed = true;
             CommandToken ct = CommandLog[LogIndex];
 
             switch (ct.command)
             {
-                case "add": ImportantValue += ct.value;
+                case "add":
+                    ImportantValue += ct.value;
                     break;
             }
 
-            LogIndex++;
+            if (csi.ContainsKey(LogIndex))
+                csi[LogIndex].GetResponse();
+        }
+
+        public void CheckIfLogEntriesRemainUncommitted()
+        {
+            foreach (var command in CommandLog)
+            {
+                if (command.Value.is_committed == false)
+                {
+                    HasLogEntriesUncommitted = true;
+                    return;
+                }
+                else
+                {
+                    HasLogEntriesUncommitted = false;
+                }
+            }
         }
 
         public void ReceiveVoteRPC(Guid voeter_id, int term, bool voteGranted)
         { // Increemnt VoteForMe property instead of castvote
-            
+
             if (voteGranted)
                 IncrementVoteCount();
 
@@ -250,24 +276,42 @@ namespace raft_DJPhelps1
 
         public async Task SendHeartbeat()
         {
-            if(InternalDelay > 5)
+            if (InternalDelay > 5)
                 await Task.Delay(InternalDelay);
 
-            foreach(INode n in Nodes.Values)
+            CheckIfLogEntriesRemainUncommitted();
+
+            CommandToken ct = GetHeartbeatToken();
+            if (HasLogEntriesUncommitted)
+                ct = CommandLog[LogIndex];
+
+            if (LogActionCounter > Nodes.Count / 2)
             {
-                n.AppendEntriesRPC(this.Id, CommandLog[LogIndex]);
+                CommitEntries();
+                ct = CommandLog[LogIndex];
+                SetupForNextLog();
+            }
+
+            foreach (INode n in Nodes.Values)
+            {
+                n.AppendEntriesRPC(this.Id, ct);
             }
         }
 
-
+        public void SetupForNextLog()
+        {
+            IsCurrentLogCounted = true;
+            LogActionCounter = 0;
+            LogIndex++;
+        }
 
         public void AppendEntriesRPC(Guid Leader, CommandToken log_addition)
         {
-            bool validEntryFlag = false;
+            bool validLeaderFlag = false;
 
             if (Nodes.ContainsKey(Leader) && log_addition.term >= this.Term)
             {
-                validEntryFlag = true;
+                validLeaderFlag = true;
                 State = "Follower";
                 Term = log_addition.term;
 
@@ -276,75 +320,126 @@ namespace raft_DJPhelps1
                 RefreshElectionTimeout();
             }
 
-            if(log_addition.index == 0)
+            // Empty log entry base case
+            if (log_addition.index == 0 && !CommandLog.ContainsKey(0))
             {
                 LogIndex = 0;
                 NextIndex = 1;
                 CommandLog.Add(0, log_addition);
             }
+
+
+            // Intermittent case: Log is received. 
+            // Next step: validate log against index, and against exisitng entry.
+            // If token has no command, it is a heartbeat token.
+            if (log_addition.command == "")
+            {
+                Console.WriteLine($"Heartbeat received at {DateTime.Now}\n");
+            }
             else
             {
+                // If leader index needs to be decremented (I.E. Log value too high, or token not exists in log
+                if (LeaderIndexNeedsToBeDecremented(log_addition))
+                {
+                    log_addition.is_valid = false;
+                }
 
-                LogIndex = log_addition.index;
-
-                //if (CommandLog.ContainsKey(log_addition.index) && CommandLog[log_addition.index])
-                CommandLog[LogIndex] = log_addition;
+                // If leader index is low enough, and the log entries match
+                else if (log_addition.index < LogIndex
+                    && CommandLog[log_addition.index].term == log_addition.term)
+                {
+                    PurgeLogAboveIndex(log_addition.index);
+                    LogIndex = log_addition.index;
+                }
+                else
+                {
+                    Console.WriteLine($"Token is assumed valid.\nToken: {log_addition}");
+                }
             }
 
+            // Log can be committed case
+            if (log_addition.is_committed && log_addition.is_valid)
+            {
+                CommitEntries();
+                LogIndex++;
+            }
+            
             if (Nodes.ContainsKey(Leader))
-                Nodes[Leader].AppendResponseRPC(Id, validEntryFlag, log_addition);
+                Nodes[Leader].AppendResponseRPC(Id, validLeaderFlag, log_addition);
         }
 
-        public void AppendEntriesRPC(Guid Leader, int newTerm)
+        private bool LeaderIndexNeedsToBeDecremented(CommandToken log_addition)
         {
-            bool validEntryFlag = false;
-            if (Nodes.ContainsKey(Leader) && Nodes[Leader].Term >= this.Term)
+            bool tokenIsInLog = CommandLog.ContainsKey(log_addition.index); // entry does or does not exist
+            bool indexTooHigh = log_addition.index > LogIndex;
+            bool tokensDoNotMatch = false;
+            if (tokenIsInLog && CommandLog.ContainsKey(LogIndex))
+                tokensDoNotMatch = CommandLog[LogIndex] != log_addition;
+
+            // IF:
+            return indexTooHigh // index is too high OR
+                || !tokenIsInLog // entry does not exist OR
+                || (tokenIsInLog // entry exists AND
+                && tokensDoNotMatch); // entries do not match
+
+            // Return true.
+        }
+
+        //public void AppendEntriesRPC(Guid Leader, int newTerm)
+        //{
+        //    bool validEntryFlag = false;
+        //    if (Nodes.ContainsKey(Leader) && Nodes[Leader].Term >= this.Term)
+        //    {
+        //        validEntryFlag = true;
+        //        State = "Follower";
+        //        Term = Nodes[Leader].Term;
+
+        //        DelayStop.Cancel();
+        //        CurrentLeader = Leader;
+        //        RefreshElectionTimeout();
+        //    }
+
+        //    var newct = new CommandToken();
+
+        //    if (Nodes.ContainsKey(Leader))
+        //        Nodes[Leader].AppendResponseRPC(Id, validEntryFlag, newct);
+        //}
+
+        public void PurgeLogAboveIndex(int index)
+        {
+            foreach (var log in CommandLog)
             {
-                validEntryFlag = true;
-                State = "Follower";
-                Term = Nodes[Leader].Term;
-
-                DelayStop.Cancel();
-                CurrentLeader = Leader;
-                RefreshElectionTimeout();
+                if (log.Key > index)
+                    CommandLog.Remove(index);
             }
-
-            var newct = new CommandToken();
-
-            if (Nodes.ContainsKey(Leader))
-                Nodes[Leader].AppendResponseRPC(Id, validEntryFlag, newct);
         }
 
         public void AppendResponseRPC(Guid RPCReceiver, bool ValidLeader, CommandToken ValidEntry)
         {
             AppendEntriesResponseFlag = ValidLeader;
-            if (ValidEntry.command == "")
-                return;
-            if (!ValidEntry.is_committed)
+
+            if (!ValidEntry.is_valid)
                 LogIndex--;
-            else if (ValidEntry.is_committed)
+            else if (!ValidEntry.is_committed && ValidEntry.command != "")
                 LogActionCounter++;
         }
 
         public async void MakeLeader()
         {
             State = "Leader";
-
-            CommandToken newToken = new()
-            {
-                command = "",
-                term = Term,
-                value = 0,
-                index = NextIndex,
-                is_committed = false
-            };
-
-            CommandLog.Add(NextIndex, newToken);
-            NextIndex++;
             await SendHeartbeat();
             VoteCountForMe = 0;
         }
 
+        public CommandToken GetHeartbeatToken() => new CommandToken()
+        {
+            command = "",
+            term = Term,
+            value = 0,
+            index = NextIndex,
+            is_committed = false,
+            is_valid = true
+        };
 
         public void RequestAdd(int input_num)
         {
@@ -354,11 +449,26 @@ namespace raft_DJPhelps1
                 term = Term,
                 value = input_num,
                 index = NextIndex,
-                is_committed = false
+                is_committed = false,
+                is_valid = true
             };
 
+            if (!IsCurrentLogCounted)
+            {
+                IsCurrentLogCounted = true;
+                LogActionCounter++;
+            }
+
+            HasLogEntriesUncommitted = true;
             CommandLog.Add(NextIndex, newToken);
             NextIndex++;
+        }
+
+        public bool RequestAdd(int input_num, ClientStandin cs)
+        {
+            csi.Add(NextIndex, cs);
+            RequestAdd(input_num);
+            return true;
         }
     }
 }

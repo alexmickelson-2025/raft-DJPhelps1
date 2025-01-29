@@ -175,11 +175,11 @@ Going to replace these with different sliders and progress bars.
 
             StateHasChanged();
 
-            timer = new Timer(_ =>
+            timer = new Timer(_ => // Timer is threaded and is nice for refreshing state
             {
                 UpdateNodeTimeoutsGraphic();
                 InvokeAsync(StateHasChanged); // Needed to refresh things periodically
-            }, null, 0, 40);
+            }, null, 0, 20);
 
             foreach(var n in simulationNodes){
                 n.Start();

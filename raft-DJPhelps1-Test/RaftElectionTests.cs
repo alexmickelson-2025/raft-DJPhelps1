@@ -361,11 +361,18 @@ namespace raft_TDD_Tests
             node2.AppendEntriesResponseFlag = true;
             node.Nodes.Add(node2.Id, node2);
 
-            node2.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<int>())).
+            node2.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>())).
                 Do(x => { 
-                node.AppendEntriesRPC(node2.Id, node2.Term);
+                node.AppendEntriesRPC(node2.Id, new CommandToken()
+                {
+                    term = 1,
+                    value = 0,
+                    command = "",
+                    index = 0,
+                    is_committed = false
                 });
-            node2.AppendEntriesRPC(node2.Id, node2.Term);
+                });
+            node2.AppendEntriesRPC(node2.Id, new CommandToken());
 
             Assert.True(!node2.AppendEntriesResponseFlag);
         }
