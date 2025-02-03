@@ -56,3 +56,14 @@
       timeout: 3s
       retries: 3
       start_period: 3s
+  client:
+    working_dir: /app
+    user: 1000:100
+    environment:
+    - NODE_URLS=http://node1:8080,http://node2:8080,http://node3:8080
+    volumes:
+    - ./:/app
+    command: dotnet watch --project WebRaftSimNetworked
+    ports:
+    - 5000:8080
+    

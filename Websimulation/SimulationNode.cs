@@ -109,4 +109,34 @@ public class SimulationNode : INode
     {
         ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response1, response2);
     }
+
+    Task INode.ReceiveVoteRPC(Guid id, int term, bool voteGranted)
+    {
+        return ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
+    }
+
+    Task INode.IncrementVoteCount()
+    {
+        return ((INode)InnerNode).IncrementVoteCount();
+    }
+
+    Task INode.AppendEntriesRPC(Guid leader, CommandToken ct)
+    {
+        return ((INode)InnerNode).AppendEntriesRPC(leader, ct);
+    }
+
+    Task INode.RequestVoteRPC(Guid id, int term)
+    {
+        return ((INode)InnerNode).RequestVoteRPC(id, term);
+    }
+
+    Task INode.AppendResponseRPC(Guid RPCReceiver, bool response1, CommandToken response2)
+    {
+        return ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response1, response2);
+    }
+
+    Task<bool> INode.RequestAdd(int input_num)
+    {
+        return ((INode)InnerNode).RequestAdd(input_num);
+    }
 }
