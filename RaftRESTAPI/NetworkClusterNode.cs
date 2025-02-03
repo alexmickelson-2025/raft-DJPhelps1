@@ -68,9 +68,10 @@ namespace RaftRESTAPI
             }
         }
 
-        public async Task RequestAdd(int request_value)
+        public async Task<bool> RequestAdd(int request_value)
         {
             await client.PostAsJsonAsync(Url + "/request/add", request_value);
+            return true;
         }
 
         public Guid Id { get; set; }
