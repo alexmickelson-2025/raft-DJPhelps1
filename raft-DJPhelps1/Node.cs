@@ -132,7 +132,7 @@ namespace raft_DJPhelps1
             }).ToArray();
         }
 
-        public void RequestVoteRPC(Guid candidate_id, int election_term)
+        public async Task RequestVoteRPC(Guid candidate_id, int election_term)
         {
             //In this method: if vote request received, reset election timeout timer
             if (election_term >= Term)
@@ -155,7 +155,7 @@ namespace raft_DJPhelps1
                     RefreshElectionTimeout();
                     Term = election_term;
                     DelayStop.Cancel();
-                    Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
+                    await Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
                     Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
                 }
                 else if (!Votes.ContainsKey(election_term))
@@ -164,13 +164,13 @@ namespace raft_DJPhelps1
                     Votes.Add(election_term, candidate_id);
                     Term = election_term;
                     DelayStop.Cancel();
-                    Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true);
+                    await Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true);
                     Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
                 }
                 else
                 {
                     DelayStop.Cancel();
-                    Nodes[candidate_id].ReceiveVoteRPC(candidate_id, election_term, false);
+                    await Nodes[candidate_id].ReceiveVoteRPC(candidate_id, election_term, false);
                     Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
                 }
 
@@ -223,11 +223,11 @@ namespace raft_DJPhelps1
             }
         }
 
-        public void ReceiveVoteRPC(Guid voeter_id, int term, bool voteGranted)
+        public async Task ReceiveVoteRPC(Guid voeter_id, int term, bool voteGranted)
         { // Increemnt VoteForMe property instead of castvote
 
             if (voteGranted)
-                IncrementVoteCount();
+                await Task.Run(IncrementVoteCount);
 
             // Check if enough votes -> cancel and handle with catch block
             // If vote expires, term recycles.
@@ -238,19 +238,21 @@ namespace raft_DJPhelps1
             }
         }
 
-        public void IncrementVoteCount()
+        public Task IncrementVoteCount()
         {
             VoteCountForMe++;
+
+            return Task.CompletedTask;
         }
 
-        public void StartNewElection()
+        public async void StartNewElection()
         {
             VoteCountForMe = 0;
             Term++;
             CurrentLeader = Id;
 
             RequestVotesFromClusterRPC();
-            ReceiveVoteRPC(Id, Term, true);
+            await ReceiveVoteRPC(Id, Term, true);
 
             while (ElectionTimerCurr > 0)
             {
@@ -294,7 +296,7 @@ namespace raft_DJPhelps1
 
             foreach (INode n in Nodes.Values)
             {
-                n.AppendEntriesRPC(this.Id, ct);
+                await Task.Run(async () => await n.AppendEntriesRPC(Id, ct)).ConfigureAwait(false);
             }
         }
 
@@ -305,8 +307,12 @@ namespace raft_DJPhelps1
             LogIndex++;
         }
 
-        public void AppendEntriesRPC(Guid Leader, CommandToken log_addition)
+        public async Task AppendEntriesRPC(Guid Leader, CommandToken log_addition)
         {
+            await Task.Run(() => 
+                Console.WriteLine($"Append request received from {Leader} at {DateTime.Now}"
+            ));
+
             bool validLeaderFlag = false;
 
             if (Nodes.ContainsKey(Leader) && log_addition.term >= this.Term)
@@ -365,7 +371,7 @@ namespace raft_DJPhelps1
             }
             
             if (Nodes.ContainsKey(Leader))
-                Nodes[Leader].AppendResponseRPC(Id, validLeaderFlag, log_addition);
+                await Task.Run(async () => await Nodes[Leader].AppendResponseRPC(Id, validLeaderFlag, log_addition));
         }
 
         private bool LeaderIndexNeedsToBeDecremented(CommandToken log_addition)
@@ -414,9 +420,9 @@ namespace raft_DJPhelps1
             }
         }
 
-        public void AppendResponseRPC(Guid RPCReceiver, bool ValidLeader, CommandToken ValidEntry)
+        public async Task AppendResponseRPC(Guid RPCReceiver, bool ValidLeader, CommandToken ValidEntry)
         {
-            AppendEntriesResponseFlag = ValidLeader;
+            await Task.Run(() => AppendEntriesResponseFlag = ValidLeader);
 
             if (!ValidEntry.is_valid)
                 LogIndex--;
@@ -441,8 +447,9 @@ namespace raft_DJPhelps1
             is_valid = true
         };
 
-        public void RequestAdd(int input_num)
+        public async Task<bool> RequestAdd(int input_num)
         {
+            await Task.Run(() => Console.WriteLine($"Request to add {input_num} received at {DateTime.Now}"));
             CommandToken newToken = new()
             {
                 command = "add",
@@ -462,12 +469,14 @@ namespace raft_DJPhelps1
             HasLogEntriesUncommitted = true;
             CommandLog.Add(NextIndex, newToken);
             NextIndex++;
+
+            return true;
         }
 
-        public bool RequestAdd(int input_num, ClientStandin cs)
+        public async Task<bool> RequestAdd(int input_num, ClientStandin cs)
         {
             csi.Add(NextIndex, cs);
-            RequestAdd(input_num);
+            await RequestAdd(input_num);
             return true;
         }
     }

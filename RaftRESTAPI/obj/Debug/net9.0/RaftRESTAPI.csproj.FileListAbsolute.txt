@@ -1,0 +1,6 @@
+C:\Users\ember\source\repos\raft-DJPhelps1\RaftRESTAPI\obj\Debug\net9.0\RaftRESTAPI.csproj.AssemblyReference.cache
+C:\Users\ember\source\repos\raft-DJPhelps1\RaftRESTAPI\obj\Debug\net9.0\RaftRESTAPI.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ember\source\repos\raft-DJPhelps1\RaftRESTAPI\obj\Debug\net9.0\RaftRESTAPI.AssemblyInfoInputs.cache
+C:\Users\ember\source\repos\raft-DJPhelps1\RaftRESTAPI\obj\Debug\net9.0\RaftRESTAPI.AssemblyInfo.cs
+C:\Users\ember\source\repos\raft-DJPhelps1\RaftRESTAPI\obj\Debug\net9.0\RaftRESTAPI.csproj.CoreCompileInputs.cache
+C:\Users\ember\source\repos\raft-DJPhelps1\RaftRESTAPI\obj\Debug\net9.0\RaftRESTAPI.sourcelink.json

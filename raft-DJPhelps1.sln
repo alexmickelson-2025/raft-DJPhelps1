@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Websimulation", "Websimulat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-DJPhelps1-Test_Logs", "raft-DJPhelps1-Test_Logs\raft-DJPhelps1-Test_Logs.csproj", "{48D2466E-D892-4CD9-8815-A8834F884946}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftRESTAPI", "RaftRESTAPI\RaftRESTAPI.csproj", "{36816C9D-A146-4E41-8843-E1E5BC1E1F60}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{48D2466E-D892-4CD9-8815-A8834F884946}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48D2466E-D892-4CD9-8815-A8834F884946}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48D2466E-D892-4CD9-8815-A8834F884946}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36816C9D-A146-4E41-8843-E1E5BC1E1F60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36816C9D-A146-4E41-8843-E1E5BC1E1F60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36816C9D-A146-4E41-8843-E1E5BC1E1F60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36816C9D-A146-4E41-8843-E1E5BC1E1F60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

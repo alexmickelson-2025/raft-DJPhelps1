@@ -13,12 +13,12 @@
         void StartNewElection();
         void Start();
         void Stop();
-        void ReceiveVoteRPC(Guid id, int term, bool voteGranted);
-        void IncrementVoteCount();
-        void AppendEntriesRPC(Guid leader, CommandToken ct);
+        Task ReceiveVoteRPC(Guid id, int term, bool voteGranted);
+        Task IncrementVoteCount();
+        Task AppendEntriesRPC(Guid leader, CommandToken ct);
         //void AppendEntriesRPC(Guid g, int i);
-        void RequestVoteRPC(Guid id, int term);
-        void AppendResponseRPC(Guid RPCReceiver, bool response1, CommandToken response2);
-        void RequestAdd(int input_num);
+        Task RequestVoteRPC(Guid id, int term);
+        Task AppendResponseRPC(Guid RPCReceiver, bool response1, CommandToken response2);
+        Task<bool> RequestAdd(int input_num);
     }
 }
