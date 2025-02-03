@@ -5,8 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RaftRESTAPI
-{
+namespace raft_DJPhelps1 { 
     public record AppendDeets
     {
         public Guid id;

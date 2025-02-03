@@ -5,19 +5,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RaftRESTAPI
+namespace raft_DJPhelps1
 {
-    public record NodeData
-    {
-        public Guid Id;
-        public bool Status;
-        public int ElectionTimer;
-        public int Term;
-        public Guid CurrentTermLeader;
-        public int CommittedEntryIndex;
-        public int LogIndex;
-        public List<CommandToken> Log;
-        public string? State;
-        public int TimeoutMultiplier;
-    }
+    public record NodeData(
+        Guid Node_Id,
+        bool Status,
+        int ElectionTimer,
+        int Term,
+        Guid CurrentTermLeader,
+        int NextIndex,
+        int LogIndex,
+        Dictionary<int, CommandToken> Log,
+        string? State,
+        int TimeoutMultiplier
+    );
 }
