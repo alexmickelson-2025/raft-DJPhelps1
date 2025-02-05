@@ -40,7 +40,12 @@ List<INode> otherNodes = new();
 foreach (var n in otherNodesRaw.Split(";"))
 {
     string[] instances = n.Split(",");
-    otherNodes.Add(new NetworkClusterNode(Guid.Parse(instances[0]), instances[1]));
+    otherNodes.Add(
+        new NetworkClusterNode(
+            Guid.Parse(instances[0]), 
+            instances[1]
+            )
+        );
 }
 
 

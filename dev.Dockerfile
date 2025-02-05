@@ -10,4 +10,11 @@ RUN groupadd -g 1000 developer && \
     mkdir -p /home/developer && \
     chown -R developer:developer /home/developer
  
+
+WORKDIR /app
+ 
+COPY . /app
+RUN chown -R developer:developer /app
 USER developer:developer
+
+CMD dotnet run --project RaftAPI

@@ -1,5 +1,8 @@
 **/.classpath
 **/.dockerignore
+**/obj/
+**/bin/
+RaftAPI/obj/
 **/.env
 **/.git
 **/.gitignore
