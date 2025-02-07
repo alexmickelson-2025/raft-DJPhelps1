@@ -120,7 +120,7 @@ namespace raft_DJPhelps1
                         }
                         catch (OperationCanceledException e)
                         {
-                            Console.WriteLine($"Follower {Id} received heartbeat from leader.\n", e.Message);
+                            Console.WriteLine($"Follower {Id} received heartbeat from leader {CurrentLeader}.\n", e.Message);
                         }
                     }
                 }
@@ -311,6 +311,7 @@ namespace raft_DJPhelps1
 
             foreach (INode n in Nodes.Values)
             {
+                Console.WriteLine($"Leader sending heartbeat from {Id} to {n.Id}");
                 await n.AppendEntriesRPC(Id, ct);
             }
 
@@ -325,9 +326,7 @@ namespace raft_DJPhelps1
 
         public async Task AppendEntriesRPC(Guid Leader, CommandToken log_addition)
         {
-            await Task.Run(() => 
-                Console.WriteLine($"Append request received from {Leader} at {DateTime.Now}"
-            ));
+            Console.WriteLine($"Append request received from {Leader} at {DateTime.Now}");
 
             bool validLeaderFlag = false;
 
@@ -337,9 +336,8 @@ namespace raft_DJPhelps1
                 State = "Follower";
                 Term = log_addition.TERM;
 
-                DelayStop.Cancel();
-                CurrentLeader = Leader;
                 RefreshElectionTimeout();
+                CurrentLeader = Leader;
             }
 
             // Empty log entry base case
