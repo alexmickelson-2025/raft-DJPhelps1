@@ -38,8 +38,8 @@ namespace raft_DJPhelps1
             Random initializer = new Random();
 
             // Timers
-            TimeoutMultiplier = 200;
-            Heartbeat = 25 * TimeoutMultiplier;
+            TimeoutMultiplier = 50;
+            Heartbeat = 50 * TimeoutMultiplier;
             ElectionTimerMax = initializer.Next(150, 300) * TimeoutMultiplier;
             RefreshElectionTimeout();
             
