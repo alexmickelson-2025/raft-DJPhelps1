@@ -54,7 +54,7 @@
     {
         base.OnInitialized();
         urls = Environment.GetEnvironmentVariable("NODE_URLS")?.Split(',') ?? throw new Exception("Node Urls not set");
-        TimeoutMultiplier = Int32.Parse(Environment.GetEnvironmentVariable("NODE_INTERVAL_SCALAR"));
+        // TimeoutMultiplier = Int32.Parse(Environment.GetEnvironmentVariable("NODE_INTERVAL_SCALAR"));
         nodes = new();
 
         nodes.Add(1, new NetworkClusterNode(Guid.NewGuid(), urls[0]));
