@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 namespace raft_DJPhelps1 { 
     public record AppendDeets
     {
-        public Guid id;
-        public required CommandToken ct;
+        public Guid ID { get; set; }
+        public required CommandToken CT { get; set; }
         //Valid leader flag
-        public bool vlf;
+        public bool VLF { get; set; }
     }
 }

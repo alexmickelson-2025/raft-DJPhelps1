@@ -148,8 +148,8 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node3.Id, node3);
 
             node1.StartNewElection();
-            await node1.ReceiveVoteRPC(node2.Id, 2, true);
-            await node1.ReceiveVoteRPC(node3.Id, 2, true);
+            await node1.RespondVoteRPC(node2.Id, 2, true);
+            await node1.RespondVoteRPC(node3.Id, 2, true);
 
 
             Assert.True(node1.State == "Leader");
@@ -170,7 +170,7 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node3.Id, node3);
 
             node1.StartNewElection();
-            await node1.ReceiveVoteRPC(node2.Id, 2, true);
+            await node1.RespondVoteRPC(node2.Id, 2, true);
 
             Assert.True(node1.State == "Leader");
         }
@@ -306,11 +306,11 @@ namespace raft_TDD_Tests
             node.Nodes.Add(node2.Id, node2);
 
             CommandToken commandToken = Substitute.For<CommandToken>();
-            commandToken.term = 2;
-            commandToken.value = 2;
-            commandToken.command = "add";
-            commandToken.index = 0;
-            commandToken.is_committed = false;
+            commandToken.TERM = 2;
+            commandToken.VALUE = 2;
+            commandToken.COMMAND = "add";
+            commandToken.INDEX = 0;
+            commandToken.ISCOMMITTED = false;
 
 
             node.AppendEntriesRPC(node.Id, commandToken);
@@ -335,11 +335,11 @@ namespace raft_TDD_Tests
                 Do(async x => { 
                 await node.AppendEntriesRPC(node2.Id, new CommandToken()
                 {
-                    term = 1,
-                    value = 0,
-                    command = "",
-                    index = 0,
-                    is_committed = false
+                    TERM = 1,
+                    VALUE = 0,
+                    COMMAND = "",
+                    INDEX = 0,
+                    ISCOMMITTED = false
                 });
                 });
             await node2.AppendEntriesRPC(node2.Id, new CommandToken());

@@ -38,9 +38,9 @@ namespace raft_DJPhelps1
             Random initializer = new Random();
 
             // Timers
-            TimeoutMultiplier = 500;
+            TimeoutMultiplier = 100;
             Heartbeat = 50 * TimeoutMultiplier;
-            ElectionTimerMax = initializer.Next(150, 300);
+            ElectionTimerMax = initializer.Next(150, 300) * TimeoutMultiplier;
             RefreshElectionTimeout();
             
             // Work entries
@@ -49,7 +49,6 @@ namespace raft_DJPhelps1
             Term = 1;
             AppendEntriesResponseFlag = false;
             IsStarted = false;
-            IsCurrentLogCounted = false;
             HasLogEntriesUncommitted = false;
             ImportantValue = 0;
             InternalDelay = 0;
@@ -78,7 +77,8 @@ namespace raft_DJPhelps1
                         {
                             while(Heartbeat > 0)
                             {
-                                Task.Delay(50, DelayStop.Token);
+                                Console.WriteLine($"Sleeping for {50}");
+                                await Task.Delay(50, DelayStop.Token);
                                 Heartbeat -= 50;
                             }
                             await SendHeartbeat();
@@ -109,7 +109,8 @@ namespace raft_DJPhelps1
                         {
                             while(ElectionTimerCurr > 0)
                             {
-                                Task.Delay(50, DelayStop.Token);
+                                Console.WriteLine($"Sleeping for {50}");
+                                await Task.Delay(50, DelayStop.Token);
                                 ElectionTimerCurr -= 50;
                             }
 
@@ -148,7 +149,7 @@ namespace raft_DJPhelps1
             {
                 if (election_term > Term)
                 {
-                    State = "follower";
+                    State = "Follower";
                     Term = election_term;
                     Console.WriteLine("Higher term signal detected. Reverting to follower.");
                 }
@@ -165,8 +166,8 @@ namespace raft_DJPhelps1
                     Term = election_term;
                     if(State != "Candidate")
                         DelayStop.Cancel();
-                    await Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
-                    Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
+                    await Nodes[candidate_id].RespondVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
+                    Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                 }
                 else if (!Votes.ContainsKey(election_term))
                 {
@@ -175,42 +176,32 @@ namespace raft_DJPhelps1
                     Term = election_term;
                     if (State != "Candidate")
                         DelayStop.Cancel();
-                    await Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true);
-                    Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
+                    await Nodes[candidate_id].RespondVoteRPC(Id, election_term, true);
+                    Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                 }
                 else
                 {
                     if (State != "Candidate")
                         DelayStop.Cancel();
-                    await Nodes[candidate_id].ReceiveVoteRPC(candidate_id, election_term, false);
-                    Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
+                    await Nodes[candidate_id].RespondVoteRPC(candidate_id, election_term, false);
+                    Console.WriteLine($"Node {candidate_id} vote request rejected at {DateTime.Now}");
                 }
             }
             else
             {
-                Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
+                Console.WriteLine($"Node {candidate_id} vote request rejected at {DateTime.Now}");
             }
         }
 
-        //public void CommitEntries()
-        //{
-        //    CommitEntryRPC();
-        //    foreach (Node node in Nodes.Values)
-        //    {
-        //        node.CommitEntryRPC();
-        //    }
-        //    LogActionCounter = 0;
-        //}
-
         public void CommitEntries()
         {
-            CommandLog[LogIndex].is_committed = true;
+            CommandLog[LogIndex].ISCOMMITTED = true;
             CommandToken ct = CommandLog[LogIndex];
 
-            switch (ct.command)
+            switch (ct.COMMAND)
             {
                 case "add":
-                    ImportantValue += ct.value;
+                    ImportantValue += ct.VALUE;
                     break;
             }
 
@@ -222,7 +213,7 @@ namespace raft_DJPhelps1
         {
             foreach (var command in CommandLog)
             {
-                if (command.Value.is_committed == false)
+                if (command.Value.ISCOMMITTED == false)
                 {
                     HasLogEntriesUncommitted = true;
                     return;
@@ -234,7 +225,7 @@ namespace raft_DJPhelps1
             }
         }
 
-        public async Task ReceiveVoteRPC(Guid voeter_id, int term, bool voteGranted)
+        public async Task RespondVoteRPC(Guid voeter_id, int term, bool voteGranted)
         { // Increemnt VoteForMe property instead of castvote
 
             if (voteGranted)
@@ -264,13 +255,14 @@ namespace raft_DJPhelps1
 
             // Send out requests for votes, and vote for self.
             RequestVotesFromClusterRPC();
-            await ReceiveVoteRPC(Id, Term, true);
+            await RespondVoteRPC(Id, Term, true);
 
             try
             {
                 while (ElectionTimerCurr > 0)
                 {
-                    Task.Delay(50, DelayStop.Token);
+                    Console.WriteLine($"Sleeping for {50}");
+                    await Task.Delay(50, DelayStop.Token);
                     ElectionTimerCurr -= 50;
                 }
             }
@@ -292,7 +284,7 @@ namespace raft_DJPhelps1
         public void IsTimedOut()
         {
             var rand = new Random();
-            ElectionTimerMax = rand.Next(150, 300);
+            ElectionTimerMax = rand.Next(150, 300) * TimeoutMultiplier;
             RefreshElectionTimeout();
             StartNewElection();
         }
@@ -300,7 +292,10 @@ namespace raft_DJPhelps1
         public async Task SendHeartbeat()
         {
             if (InternalDelay > 5)
-                Task.Delay(InternalDelay);
+            {
+                Console.WriteLine($"Sleeping for {InternalDelay}");
+                await Task.Delay(InternalDelay);
+            }
 
             CheckIfLogEntriesRemainUncommitted();
 
@@ -308,7 +303,7 @@ namespace raft_DJPhelps1
             if (HasLogEntriesUncommitted)
                 ct = CommandLog[LogIndex];
 
-            if (LogActionCounter > Nodes.Count / 2)
+            if (LogActionCounter + 1 > Nodes.Count / 2)
             {
                 CommitEntries();
                 ct = CommandLog[LogIndex];
@@ -325,7 +320,6 @@ namespace raft_DJPhelps1
 
         public void SetupForNextLog()
         {
-            IsCurrentLogCounted = true;
             LogActionCounter = 0;
             LogIndex++;
         }
@@ -338,11 +332,11 @@ namespace raft_DJPhelps1
 
             bool validLeaderFlag = false;
 
-            if (Nodes.ContainsKey(Leader) && log_addition.term >= this.Term)
+            if (Nodes.ContainsKey(Leader) && log_addition.TERM >= this.Term)
             {
                 validLeaderFlag = true;
                 State = "Follower";
-                Term = log_addition.term;
+                Term = log_addition.TERM;
 
                 DelayStop.Cancel();
                 CurrentLeader = Leader;
@@ -350,7 +344,7 @@ namespace raft_DJPhelps1
             }
 
             // Empty log entry base case
-            if (log_addition.index == 0 && !CommandLog.ContainsKey(0))
+            if (log_addition.INDEX == 0 && !CommandLog.ContainsKey(0))
             {
                 LogIndex = 0;
                 NextIndex = 1;
@@ -361,7 +355,7 @@ namespace raft_DJPhelps1
             // Intermittent case: Log is received. 
             // Next step: validate log against index, and against exisitng entry.
             // If token has no command, it is a heartbeat token.
-            if (log_addition.command == "")
+            if (log_addition.COMMAND == "")
             {
                 Console.WriteLine($"Heartbeat received at {DateTime.Now}\n");
             }
@@ -370,15 +364,15 @@ namespace raft_DJPhelps1
                 // If leader index needs to be decremented (I.E. Log value too high, or token not exists in log
                 if (LeaderIndexNeedsToBeDecremented(log_addition))
                 {
-                    log_addition.is_valid = false;
+                    log_addition.ISVALID = false;
                 }
 
                 // If leader index is low enough, and the log entries match
-                else if (log_addition.index < LogIndex
-                    && CommandLog[log_addition.index].term == log_addition.term)
+                else if (log_addition.INDEX < LogIndex
+                    && CommandLog[log_addition.INDEX].TERM == log_addition.TERM)
                 {
-                    PurgeLogAboveIndex(log_addition.index);
-                    LogIndex = log_addition.index;
+                    PurgeLogAboveIndex(log_addition.INDEX);
+                    LogIndex = log_addition.INDEX;
                 }
                 else
                 {
@@ -387,7 +381,7 @@ namespace raft_DJPhelps1
             }
 
             // Log can be committed case
-            if (log_addition.is_committed && log_addition.is_valid)
+            if (log_addition.ISCOMMITTED && log_addition.ISVALID)
             {
                 CommitEntries();
                 LogIndex++;
@@ -399,8 +393,8 @@ namespace raft_DJPhelps1
 
         private bool LeaderIndexNeedsToBeDecremented(CommandToken log_addition)
         {
-            bool tokenIsInLog = CommandLog.ContainsKey(log_addition.index); // entry does or does not exist
-            bool indexTooHigh = log_addition.index > LogIndex;
+            bool tokenIsInLog = CommandLog.ContainsKey(log_addition.INDEX); // entry does or does not exist
+            bool indexTooHigh = log_addition.INDEX > LogIndex;
             bool tokensDoNotMatch = false;
             if (tokenIsInLog && CommandLog.ContainsKey(LogIndex))
                 tokensDoNotMatch = CommandLog[LogIndex] != log_addition;
@@ -413,26 +407,6 @@ namespace raft_DJPhelps1
 
             // Return true.
         }
-
-        //public void AppendEntriesRPC(Guid Leader, int newTerm)
-        //{
-        //    bool validEntryFlag = false;
-        //    if (Nodes.ContainsKey(Leader) && Nodes[Leader].Term >= this.Term)
-        //    {
-        //        validEntryFlag = true;
-        //        State = "Follower";
-        //        Term = Nodes[Leader].Term;
-
-        //        DelayStop.Cancel();
-        //        CurrentLeader = Leader;
-        //        RefreshElectionTimeout();
-        //    }
-
-        //    var newct = new CommandToken();
-
-        //    if (Nodes.ContainsKey(Leader))
-        //        Nodes[Leader].AppendResponseRPC(Id, validEntryFlag, newct);
-        //}
 
         public void PurgeLogAboveIndex(int index)
         {
@@ -447,9 +421,9 @@ namespace raft_DJPhelps1
         {
             await Task.Run(() => AppendEntriesResponseFlag = ValidLeader);
 
-            if (!ValidEntry.is_valid)
+            if (!ValidEntry.ISVALID)
                 LogIndex--;
-            else if (!ValidEntry.is_committed && ValidEntry.command != "")
+            else if (!ValidEntry.ISCOMMITTED && ValidEntry.COMMAND != "")
                 LogActionCounter++;
         }
 
@@ -462,12 +436,12 @@ namespace raft_DJPhelps1
 
         public CommandToken GetHeartbeatToken() => new CommandToken()
         {
-            command = "",
-            term = Term,
-            value = 0,
-            index = NextIndex,
-            is_committed = false,
-            is_valid = true
+            COMMAND = "",
+            TERM = Term,
+            VALUE = 0,
+            INDEX = NextIndex,
+            ISCOMMITTED = false,
+            ISVALID = true
         };
 
         public async Task<bool> RequestAdd(int input_num)
@@ -475,19 +449,19 @@ namespace raft_DJPhelps1
             await Task.Run(() => Console.WriteLine($"Request to add {input_num} received at {DateTime.Now}"));
             CommandToken newToken = new()
             {
-                command = "add",
-                term = Term,
-                value = input_num,
-                index = NextIndex,
-                is_committed = false,
-                is_valid = true
+                COMMAND = "add",
+                TERM = Term,
+                VALUE = input_num,
+                INDEX = NextIndex,
+                ISCOMMITTED = false,
+                ISVALID = true
             };
 
-            if (!IsCurrentLogCounted)
-            {
-                IsCurrentLogCounted = true;
-                LogActionCounter++;
-            }
+            //if (!IsCurrentLogCounted)
+            //{
+            //    IsCurrentLogCounted = true;
+            //    LogActionCounter++;
+            //}
 
             HasLogEntriesUncommitted = true;
             CommandLog.Add(NextIndex, newToken);
