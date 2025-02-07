@@ -109,7 +109,7 @@ namespace raft_DJPhelps1
                         {
                             while(ElectionTimerCurr > 0)
                             {
-                                Console.WriteLine($"Sleeping for {50}");
+                                Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
                                 await Task.Delay(50, DelayStop.Token);
                                 ElectionTimerCurr -= 50;
                             }
@@ -258,7 +258,7 @@ namespace raft_DJPhelps1
             {
                 while (ElectionTimerCurr > 0)
                 {
-                    Console.WriteLine($"Sleeping for {50}");
+                    Console.WriteLine($"ElectionTimeout is {ElectionTimerCurr}");
                     await Task.Delay(50, DelayStop.Token);
                     ElectionTimerCurr -= 50;
                 }
@@ -290,7 +290,7 @@ namespace raft_DJPhelps1
         {
             if (InternalDelay > 5)
             {
-                Console.WriteLine($"Sleeping for {InternalDelay}");
+                Console.WriteLine($"Internal delay is {InternalDelay}");
                 await Task.Delay(InternalDelay);
             }
 
