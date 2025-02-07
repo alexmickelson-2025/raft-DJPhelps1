@@ -265,7 +265,7 @@ namespace raft_DJPhelps1
                     ElectionTimerCurr -= 50;
                 }
             }
-            catch (Exception ex) {
+            catch (Exception) {
                 Console.WriteLine("Election Booted.");
             }
         }
@@ -302,7 +302,7 @@ namespace raft_DJPhelps1
             if (HasLogEntriesUncommitted)
                 ct = CommandLog[LogIndex];
 
-            if (LogActionCounter + 1 > Nodes.Count / 2)
+            if (LogActionCounter > Nodes.Count / 2)
             {
                 CommitEntries();
                 ct = CommandLog[LogIndex];
@@ -426,10 +426,10 @@ namespace raft_DJPhelps1
                 LogActionCounter++;
         }
 
-        public async void MakeLeader()
+        public void MakeLeader()
         {
             State = "Leader";
-            await SendHeartbeat();
+            Heartbeat = 0;
             VoteCountForMe = 0;
         }
 
@@ -456,11 +456,11 @@ namespace raft_DJPhelps1
                 ISVALID = true
             };
 
-            //if (!IsCurrentLogCounted)
-            //{
-            //    IsCurrentLogCounted = true;
-            //    LogActionCounter++;
-            //}
+            if (!IsCurrentLogCounted)
+            {
+                IsCurrentLogCounted = true;
+                LogActionCounter++;
+            }
 
             HasLogEntriesUncommitted = true;
             CommandLog.Add(NextIndex, newToken);

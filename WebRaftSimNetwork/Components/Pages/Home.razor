@@ -40,9 +40,9 @@
     int NetworkDelay;
     int TimeoutMultiplier;
     string[]? urls = new string[3];
-    List<Timer>? timers = new List<Timer>();
-    Dictionary<int,NodeData?> NodeDeeetsList = new Dictionary<int,NodeData?>();
-    Dictionary<int,NetworkClusterNode>? nodes;
+    List<Timer> timers = new List<Timer>();
+    Dictionary<int,NodeData> NodeDeeetsList = new Dictionary<int,NodeData>();
+    Dictionary<int,NetworkClusterNode> nodes = new();
 
     private async void SendAddRequest(MouseEventArgs e){
         if(nodes is not null){
@@ -50,8 +50,9 @@
         }
     }
 
-    protected override async void OnInitialized()
+    protected override void OnInitialized()
     {
+
         base.OnInitialized();
         urls = Environment.GetEnvironmentVariable("NODE_URLS")?.Split(',') ?? throw new Exception("Node Urls not set");
         // TimeoutMultiplier = Int32.Parse(Environment.GetEnvironmentVariable("NODE_INTERVAL_SCALAR"));
@@ -81,7 +82,7 @@
     }
 
     public async Task GetNodeState(int i){
-        NodeDeeetsList[i+1] = await nodes[i+1].RequestNodeHealth();
+        NodeDeeetsList[i+1] = await nodes[i+1].RequestNodeHealth() ?? throw new ArgumentNullException("Request node health failed.");
     }
 
     private async void ToggleSim(){

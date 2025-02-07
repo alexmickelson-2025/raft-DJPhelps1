@@ -113,7 +113,7 @@ namespace raft_DJPhelps1_Test
 
         // Testing Logs #4
         [Fact]
-        public void WhenALeaderWinsAnElection_InitializesNextIndexForEveryFollower_Test()
+        public async void WhenALeaderWinsAnElection_InitializesNextIndexForEveryFollower_Test()
         {
             Node node = new Node();
             var node2 = Substitute.For<INode>();
@@ -123,8 +123,9 @@ namespace raft_DJPhelps1_Test
             node.Nodes.Add(node2.Id, node2);
 
             node.MakeLeader();
+            await node.SendHeartbeat();
 
-            node2.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.INDEX == 0));
+            await node2.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.INDEX == 0));
         }
 
 

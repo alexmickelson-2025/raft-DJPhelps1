@@ -30,8 +30,8 @@ builder.Logging.AddOpenTelemetry(options =>
 var app = builder.Build();
 
 var logger = app.Services.GetService<ILogger<Program>>();
-logger.LogInformation("Node ID {name}", nodeId);
-logger.LogInformation("Other nodes environment config: {}", otherNodesRaw);
+logger?.LogInformation("Node ID {name}", nodeId);
+logger?.LogInformation("Other nodes environment config: {}", otherNodesRaw);
 
 
 List<INode> otherNodes = new();
@@ -49,7 +49,7 @@ foreach (var n in otherNodesRaw.Split(";"))
 }
 
 
-logger.LogInformation("other nodes {nodes}", JsonSerializer.Serialize(otherNodes));
+logger?.LogInformation("other nodes {nodes}", JsonSerializer.Serialize(otherNodes));
 
 
 var node = new Node();
@@ -86,38 +86,38 @@ app.MapGet("/nodedata", () =>
 
 app.MapPost("/request/appendEntries", async (AppendDeets request) =>
 {
-    logger.LogInformation("received append entries request {request}", request);
+    logger?.LogInformation("received append entries request {request}", request);
     await node.AppendEntriesRPC(request.ID, request.CT);
 });
 
 app.MapPost("/request/vote", async (VoteDeets request) =>
 {
-    logger.LogInformation("received vote request {request}", request);
+    logger?.LogInformation("received vote request {request}", request);
     await node.RequestVoteRPC(request.ID, request.TERM);
 });
 
 app.MapPost("/response/appendEntries", async (AppendDeets response) =>
 {
-    logger.LogInformation("received append entries response {response}", response);
+    logger?.LogInformation("received append entries response {response}", response);
     await node.AppendResponseRPC(response.ID, response.VLF, response.CT);
 });
 
 app.MapPost("/response/vote", async (VoteDeets response) =>
 {
-    logger.LogInformation("received vote response {response}", response);
+    logger?.LogInformation("received vote response {response}", response);
     await node.RespondVoteRPC(response.ID, response.TERM, response.VOTE);
 });
 
-app.MapPost("/request/clockupdate", async (ClockPacingToken token) =>
+app.MapPost("/request/clockupdate", (ClockPacingToken token) =>
 {
-    logger.LogInformation("Received request to update the clock.");
+    logger?.LogInformation("Received request to update the clock.");
     node.TimeoutMultiplier = token.TimeScaleMultiplier;
     node.InternalDelay = token.DelayValue;
 });
 
-app.MapPost("/request/start", async (bool startflag) =>
+app.MapPost("/request/start", (bool startflag) =>
 {
-    logger.LogInformation("Received request to toggle operation for {}", nodeId);
+    logger?.LogInformation("Received request to toggle operation for {}", nodeId);
     if(startflag)
         node.Start();
     else node.Stop();

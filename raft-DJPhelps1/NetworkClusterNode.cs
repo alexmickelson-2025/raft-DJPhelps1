@@ -14,11 +14,17 @@ namespace raft_DJPhelps1
         public string Url { get; }
         public bool StartFlag = false;
         private HttpClient client = new();
+        public Guid Id { get; set; }
+        public int Term { get; set; }
+        public Dictionary<Guid, INode> Nodes { get; set; }
+        public int TimeoutMultiplier { get; set; }
+        public int InternalDelay { get; set; }
 
         public NetworkClusterNode(Guid id, string url)
         {
             Id = id;
             Url = url;
+            Nodes = new();
         }
 
         public async Task ToggleOperation()
@@ -40,7 +46,7 @@ namespace raft_DJPhelps1
                 await client.PostAsJsonAsync(Url + "/request/add", request_value);
                 return true;
             }
-            catch (HttpRequestException e)
+            catch (HttpRequestException)
             {
                 Console.WriteLine($"node {Url} is down");
                 return false;
@@ -70,18 +76,13 @@ namespace raft_DJPhelps1
             {
                 return await client.GetFromJsonAsync<NodeData>(Url + "/nodehealth");
             }
-            catch (HttpRequestException e)
+            catch (HttpRequestException)
             {
                 Console.WriteLine($"Node {Url} is down");
             }
             return null;
         }
 
-        public Guid Id { get; set; }
-        public int Term { get; set; }
-        public Dictionary<Guid, INode> Nodes { get; set; }
-        public int TimeoutMultiplier { get; set; }
-        public int InternalDelay { get; set; }
 
         public async Task AppendEntriesRPC(Guid leader, CommandToken ct)
         {
