@@ -35,32 +35,31 @@ namespace raft_DJPhelps1
 
         public Node()
         {
-            State = "Follower";
-            TimeoutMultiplier = 1;
+            Random initializer = new Random();
+
+            // Timers
+            TimeoutMultiplier = 500;
             Heartbeat = 50 * TimeoutMultiplier;
+            ElectionTimerMax = initializer.Next(150, 300);
+            RefreshElectionTimeout();
+            
+            // Work entries
+            Id = Guid.NewGuid();
+            State = "Follower";
             Term = 1;
             AppendEntriesResponseFlag = false;
             IsStarted = false;
             IsCurrentLogCounted = false;
             HasLogEntriesUncommitted = false;
-            Id = Guid.NewGuid();
             ImportantValue = 0;
             InternalDelay = 0;
             NextIndex = 0; // The next index is a new one.
             LogIndex = 0; // The first index is the token index at the start.
-            Random initializer = new Random();
-            ElectionTimerMax = initializer.Next(150, 300);
             CommandLog = new();
-            RefreshElectionTimeout();
             Nodes = new Dictionary<Guid, INode>();
             Votes = new Dictionary<int, Guid>();
             DelayStop = new CancellationTokenSource();
             csi = new Dictionary<int, ClientStandin>();
-        }
-
-        public void ChangeHeartbeat()
-        {
-
         }
 
         public void Start()
@@ -77,13 +76,17 @@ namespace raft_DJPhelps1
                     {
                         try
                         {
-                            await Task.Delay(Heartbeat * TimeoutMultiplier, DelayStop.Token);
+                            while(Heartbeat > 0)
+                            {
+                                Task.Delay(50, DelayStop.Token);
+                                Heartbeat -= 50;
+                            }
                             await SendHeartbeat();
                             Console.WriteLine($"Heartbeat from: {Id}\n");
                         }
                         catch (OperationCanceledException e)
                         {
-                            Console.WriteLine("Heartbeat cancelled!", e.Message);
+                            Console.WriteLine($"Cancel! Term: {Term}, State: {State}, CurrentLeader: {CurrentLeader}", e.Message);
                         }
                     }
                     else if (State == "Candidate")
@@ -104,7 +107,11 @@ namespace raft_DJPhelps1
                     {
                         try
                         {
-                            await Task.Delay(ElectionTimerCurr * TimeoutMultiplier, DelayStop.Token);
+                            while(ElectionTimerCurr > 0)
+                            {
+                                Task.Delay(50, DelayStop.Token);
+                                ElectionTimerCurr -= 50;
+                            }
 
                             State = "Candidate";
                         }
@@ -115,6 +122,8 @@ namespace raft_DJPhelps1
                     }
                 }
             });
+
+            Console.WriteLine($"Node {Id} stopped!");
         }
 
         public void Stop()
@@ -154,7 +163,8 @@ namespace raft_DJPhelps1
                 {
                     RefreshElectionTimeout();
                     Term = election_term;
-                    DelayStop.Cancel();
+                    if(State != "Candidate")
+                        DelayStop.Cancel();
                     await Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
                     Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
                 }
@@ -163,17 +173,18 @@ namespace raft_DJPhelps1
                     RefreshElectionTimeout();
                     Votes.Add(election_term, candidate_id);
                     Term = election_term;
-                    DelayStop.Cancel();
+                    if (State != "Candidate")
+                        DelayStop.Cancel();
                     await Nodes[candidate_id].ReceiveVoteRPC(Id, election_term, true);
                     Console.WriteLine($"Node {candidate_id} vote request accepted at{DateTime.Now}");
                 }
                 else
                 {
-                    DelayStop.Cancel();
+                    if (State != "Candidate")
+                        DelayStop.Cancel();
                     await Nodes[candidate_id].ReceiveVoteRPC(candidate_id, election_term, false);
                     Console.WriteLine($"Node {candidate_id} vote request rejected at{DateTime.Now}");
                 }
-
             }
             else
             {
@@ -251,17 +262,27 @@ namespace raft_DJPhelps1
             Term++;
             CurrentLeader = Id;
 
+            // Send out requests for votes, and vote for self.
             RequestVotesFromClusterRPC();
             await ReceiveVoteRPC(Id, Term, true);
 
-            while (ElectionTimerCurr > 0)
+            try
             {
-                Thread.Sleep(10);
-                ElectionTimerCurr -= 10;
+                while (ElectionTimerCurr > 0)
+                {
+                    Task.Delay(50, DelayStop.Token);
+                    ElectionTimerCurr -= 50;
+                }
             }
-
+            catch (Exception ex) {
+                Console.WriteLine("Election Booted.");
+            }
         }
 
+        public void ResetHeartbeat()
+        {
+            Heartbeat = 50 * TimeoutMultiplier;
+        }
 
         public void RefreshElectionTimeout()
         {
@@ -279,7 +300,7 @@ namespace raft_DJPhelps1
         public async Task SendHeartbeat()
         {
             if (InternalDelay > 5)
-                await Task.Delay(InternalDelay);
+                Task.Delay(InternalDelay);
 
             CheckIfLogEntriesRemainUncommitted();
 
@@ -296,8 +317,10 @@ namespace raft_DJPhelps1
 
             foreach (INode n in Nodes.Values)
             {
-                await Task.Run(async () => await n.AppendEntriesRPC(Id, ct)).ConfigureAwait(false);
+                await n.AppendEntriesRPC(Id, ct);
             }
+
+            ResetHeartbeat();
         }
 
         public void SetupForNextLog()
@@ -371,7 +394,7 @@ namespace raft_DJPhelps1
             }
             
             if (Nodes.ContainsKey(Leader))
-                await Task.Run(async () => await Nodes[Leader].AppendResponseRPC(Id, validLeaderFlag, log_addition));
+                await Nodes[Leader].AppendResponseRPC(Id, validLeaderFlag, log_addition);
         }
 
         private bool LeaderIndexNeedsToBeDecremented(CommandToken log_addition)

@@ -14,7 +14,13 @@
 
 Going to replace these with different sliders and progress bars.
 *@
-
+<div>
+    <label></label>
+    <input type="range" min="0" max="200" step="10" style="width:40%"/>
+    <label></label>
+    <input type="range" min="20" max="50" step="5" style="width:40%"/>
+    <button @onclick="UpdateNodeTimeouts">Touch me to confirm</button>
+</div>
 
 
 <button @onclick="StartSim">Start</button>
@@ -23,41 +29,32 @@ Going to replace these with different sliders and progress bars.
 <div class="row">
     @foreach(var node in simulationNodes)
     {
-        var maxHeartbeat = node.InnerNode.Heartbeat*node.InnerNode.TimeoutMultiplier;
-        var percentHeartbeat = (int)(Math.Abs((maxHeartbeat - node.NodeHeartbeatProgress) / maxHeartbeat));
-        var maxElectionTimer = node.InnerNode.ElectionTimerMax * node.InnerNode.TimeoutMultiplier;
-        var percentElectionTimer = (int)(Math.Abs((maxElectionTimer-node.NodeHeartbeatProgress) / maxElectionTimer));
+        var maxHeartbeat = node.InnerNode.TimeoutMultiplier * 50;
+        var percentHeartbeat = (int)(Math.Abs((maxHeartbeat - node.InnerNode.Heartbeat) / maxHeartbeat));
+        var maxElectionTimer = node.InnerNode.ElectionTimerMax;
+        var percentElectionTimer = (int)(Math.Abs((maxElectionTimer-node.InnerNode.ElectionTimerCurr) / maxElectionTimer));
 
         <div class="p-3 col-4">
             <div class="border p-3 rounded-3">
                 <div>
                     <div class="row">
-                        @node.Id
-                        @node.Term
-                        @node.InnerNode.State
+                        <p>Node: @node.Id</p>
+                        <p>Term: @node.Term</p>
+                        <p>State: @node.InnerNode.State</p>
+                        @if(node.InnerNode.IsStarted){
+                            <p>Status: Started</p>
+                        }
+                        else{
+                            <p>Status: Halted</p>
+                        }
+                        <p>Current log index: @node.InnerNode.LogIndex</p>
                         <br />
                         Current leader is @node.InnerNode.CurrentLeader
                         @if(node.InnerNode.State == "Leader"){
-                            <MudProgressLinear Class="my-7"
-                            Size="Size.Medium"
-                            Color="Color.Success"
-                            Min="0" Max="1"
-                            Value="@percentHeartbeat">
-                                <MudText>
-                                    Heartbeat:
-                                </MudText>
-                            </MudProgressLinear>
+                            <p>Next heartbeat: </p>
                         }
                         else{
 
-                            <MudProgressLinear Class="my-7"
-                            Size="Size.Medium" 
-                            Color="Color.Warning"
-                            Value="@percentElectionTimer">
-                                <MudText>
-                                    Election timer:
-                                </MudText>
-                            </MudProgressLinear>
                         }
                     </div>
                 </div>
@@ -73,31 +70,60 @@ Going to replace these with different sliders and progress bars.
     private Timer? timer;
     bool StartFlag = false;
     int NetworkDelay = 0;
-    int TimeoutMultiplier = 10;
+    int TimeoutMultiplier = 20;
     float ProgressBarSlider = 0.2f;
 
-    public void ProgressBarTest(){
-        InvokeAsync(StateHasChanged);
-    }
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
+
+        Node node1;
+        Node node2;
+        Node node3;
+
+        SimulationNode simnode1;
+        SimulationNode simnode2;
+        SimulationNode simnode3;
+
+        node1 = new Node();
+        node2 = new Node();
+        node3 = new Node();
+
+        node1.TimeoutMultiplier = TimeoutMultiplier;
+        node2.TimeoutMultiplier = TimeoutMultiplier;
+        node3.TimeoutMultiplier = TimeoutMultiplier;
+
+        simnode1 = new SimulationNode(node1);
+        simnode2 = new SimulationNode(node2);
+        simnode3 = new SimulationNode(node3);
+
+        // simnode1.RefreshActors += Refresh;
+        // simnode2.RefreshActors += Refresh;
+        // simnode3.RefreshActors += Refresh;
+
+        node1.Nodes.Add(simnode2.Id, simnode2);
+        node1.Nodes.Add(simnode3.Id, simnode3);
+
+        node2.Nodes.Add(simnode1.Id, simnode1);
+        node2.Nodes.Add(simnode3.Id, simnode3);
+
+        node3.Nodes.Add(simnode1.Id, simnode1);
+        node3.Nodes.Add(simnode2.Id, simnode2);
+
+        simulationNodes.Add(simnode1);
+        simulationNodes.Add(simnode2);
+        simulationNodes.Add(simnode3);
     }
 
-    Node node1;
-    Node node2;
-    Node node3;
+    public void UpdateNodeTimeouts(){
+        if (!StartFlag)
+            return;
 
-    SimulationNode simnode1;
-    SimulationNode simnode2;
-    SimulationNode simnode3;
-
-    public void UpdateNodeTimeoutsGraphic(){
-        foreach(var node in simulationNodes){
-            node.NodeElectionProgress -= 40;
-            node.NodeHeartbeatProgress -= 40;
-        }    
+        Stop();
+        ChangeTimeoutMultiplier();
+        ChangeNetworkDelay();
+        StartSim();
     }
 
     void Stop(){
@@ -108,25 +134,21 @@ Going to replace these with different sliders and progress bars.
             n.Stop();
         }
 
+        StartFlag = false;
         timer?.Dispose();
     }
 
-    public void Refresh(){
-        StateHasChanged();
-    }
 
     public void ChangeNetworkDelay(){
         foreach(var node in simulationNodes){
             node.InnerNode.InternalDelay = NetworkDelay;
         }
-        StateHasChanged();
         UpdateTimer();
     }
     public void ChangeTimeoutMultiplier(){
         foreach(var node in simulationNodes){
             node.InnerNode.TimeoutMultiplier = TimeoutMultiplier;
         }
-        StateHasChanged();
         UpdateTimer();
     }
 
@@ -135,51 +157,20 @@ Going to replace these with different sliders and progress bars.
         timer = new Timer(_ =>
         {
             InvokeAsync(StateHasChanged); // Any time the slider changes, we need to also change the timer.
-            UpdateNodeTimeoutsGraphic();
-        }, null, 0, 40);
+            UpdateNodeTimeouts();
+        }, null, 0, 100);
     }
 
     void StartSim(){
         if(!StartFlag)
         {
             StartFlag = true;
-
-            node1 = new Node();
-            node2 = new Node();
-            node3 = new Node();
-
-            node1.TimeoutMultiplier = TimeoutMultiplier;
-            node2.TimeoutMultiplier = TimeoutMultiplier;
-            node3.TimeoutMultiplier = TimeoutMultiplier;
-
-            simnode1 = new SimulationNode(node1);
-            simnode2 = new SimulationNode(node2);
-            simnode3 = new SimulationNode(node3);
-
-            // simnode1.RefreshActors += Refresh;
-            // simnode2.RefreshActors += Refresh;
-            // simnode3.RefreshActors += Refresh;
-
-            node1.Nodes.Add(simnode2.Id, simnode2);
-            node1.Nodes.Add(simnode3.Id, simnode3);
-
-            node2.Nodes.Add(simnode1.Id, simnode1);
-            node2.Nodes.Add(simnode3.Id, simnode3);
-
-            node3.Nodes.Add(simnode1.Id, simnode1);
-            node3.Nodes.Add(simnode2.Id, simnode2);
-
-            simulationNodes.Add(simnode1);
-            simulationNodes.Add(simnode2);
-            simulationNodes.Add(simnode3);
-
-            StateHasChanged();
-
+            
             timer = new Timer(_ => // Timer is threaded and is nice for refreshing state
             {
-                UpdateNodeTimeoutsGraphic();
+                UpdateNodeTimeouts();
                 InvokeAsync(StateHasChanged); // Needed to refresh things periodically
-            }, null, 0, 20);
+            }, null, 0, 100);
 
             foreach(var n in simulationNodes){
                 n.Start();

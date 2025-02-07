@@ -17,6 +17,8 @@ namespace raft_DJPhelps1
         int LogIndex,
         Dictionary<int, CommandToken> Log,
         string? State,
-        int TimeoutMultiplier
+        int TimeoutMultiplier,
+        int Heartbeat,
+        int ElectionTimeout
     );
 }
