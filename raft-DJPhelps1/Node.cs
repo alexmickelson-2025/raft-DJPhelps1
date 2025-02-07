@@ -78,9 +78,9 @@ namespace raft_DJPhelps1
                             while(Heartbeat > 0)
                             {
                                 Console.WriteLine($"Value of heartbeat: {Heartbeat}");
-                                await Task.Delay(50, DelayStop.Token);
                                 Heartbeat -= 50;
-                                Console.WriteLine($"Value of heartbeat: {Heartbeat}");
+                                Console.WriteLine($"Value of heartbeat (2): {Heartbeat}");
+                                await Task.Delay(50, DelayStop.Token);
                             }
                             await SendHeartbeat();
                             Console.WriteLine($"Heartbeat from: {Id}\n");
