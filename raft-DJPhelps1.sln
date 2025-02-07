@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Websimulation", "Websimulat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-DJPhelps1-Test_Logs", "raft-DJPhelps1-Test_Logs\raft-DJPhelps1-Test_Logs.csproj", "{48D2466E-D892-4CD9-8815-A8834F884946}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftDockerClient", "WebRaftSimNetworked\RaftDockerClient.csproj", "{92C3DA78-0905-49BE-8296-2573A77F0675}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebRaftSimNetwork", "WebRaftSimNetwork\WebRaftSimNetwork.csproj", "{92C3DA78-0905-49BE-8296-2573A77F0675}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftAPI", "RaftAPI\RaftAPI.csproj", "{4808290D-4177-43F1-A18E-2DF9ADBA1474}"
 EndProject

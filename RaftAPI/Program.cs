@@ -52,12 +52,15 @@ foreach (var n in otherNodesRaw.Split(";"))
 logger.LogInformation("other nodes {nodes}", JsonSerializer.Serialize(otherNodes));
 
 
-var node = new Node()
-{
-    Id = Guid.Parse(nodeId),
-};
+var node = new Node();
+node.Id = Guid.Parse(nodeId);
 
 node.TimeoutMultiplier = int.Parse(nodeIntervalScalarRaw);
+foreach(var o in otherNodes)
+{
+    Console.WriteLine($"Node {o} added to Node {node.Id}'s list");
+    node.Nodes.Add(o.Id, o);
+}
 
 node.Start();
 
@@ -84,25 +87,25 @@ app.MapGet("/nodedata", () =>
 app.MapPost("/request/appendEntries", async (AppendDeets request) =>
 {
     logger.LogInformation("received append entries request {request}", request);
-    await node.AppendEntriesRPC(request.id, request.ct);
+    await node.AppendEntriesRPC(request.ID, request.CT);
 });
 
 app.MapPost("/request/vote", async (VoteDeets request) =>
 {
     logger.LogInformation("received vote request {request}", request);
-    await node.RequestVoteRPC(request.Id, request.Term);
+    await node.RequestVoteRPC(request.ID, request.TERM);
 });
 
 app.MapPost("/response/appendEntries", async (AppendDeets response) =>
 {
     logger.LogInformation("received append entries response {response}", response);
-    await node.AppendResponseRPC(response.id, response.vlf, response.ct);
+    await node.AppendResponseRPC(response.ID, response.VLF, response.CT);
 });
 
 app.MapPost("/response/vote", async (VoteDeets response) =>
 {
     logger.LogInformation("received vote response {response}", response);
-    await node.ReceiveVoteRPC(response.Id, response.Term, response.Vote);
+    await node.RespondVoteRPC(response.ID, response.TERM, response.VOTE);
 });
 
 app.MapPost("/request/clockupdate", async (ClockPacingToken token) =>

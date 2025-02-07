@@ -8,21 +8,21 @@ namespace raft_DJPhelps1
 {
     public class CommandToken : IEquatable<CommandToken>
     {
-        public string command   = "";
-        public int value        = 0;
-        public int term         = 1;
-        public int index        = 0;
-        public bool is_committed= false;
-        public bool is_valid    = true;
+        public string COMMAND { get; set; } = "";
+        public int VALUE { get; set; } = 0;
+        public int TERM { get; set; } = 1;
+        public int INDEX { get; set; } = 0;
+        public bool ISCOMMITTED { get; set; } = false;
+        public bool ISVALID { get; set; } = true;
 
         bool IEquatable<CommandToken>.Equals(CommandToken? other)
         {
-            return this.command == other.command &&
-                this.value == other.value &&
-                this.term == other.term &&
-                this.index == other.index &&
-                this.is_valid == other.is_valid &&
-                this.is_committed == other.is_committed;
+            return this.COMMAND == other.COMMAND &&
+                this.VALUE == other.VALUE &&
+                this.TERM == other.TERM &&
+                this.INDEX == other.INDEX &&
+                this.ISVALID == other.ISVALID &&
+                this.ISCOMMITTED == other.ISCOMMITTED;
         }
     }
 }

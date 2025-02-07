@@ -65,7 +65,7 @@ public class SimulationNode : INode
     {
         Refresh?.Invoke(this, EventArgs.Empty);
         ResetELTimer();
-        ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
+        ((INode)InnerNode).RespondVoteRPC(id, term, voteGranted);
     }
 
     public void RequestVoteRPC(Guid id, int term)
@@ -110,9 +110,9 @@ public class SimulationNode : INode
         ((INode)InnerNode).AppendResponseRPC(RPCReceiver, response1, response2);
     }
 
-    Task INode.ReceiveVoteRPC(Guid id, int term, bool voteGranted)
+    Task INode.RespondVoteRPC(Guid id, int term, bool voteGranted)
     {
-        return ((INode)InnerNode).ReceiveVoteRPC(id, term, voteGranted);
+        return ((INode)InnerNode).RespondVoteRPC(id, term, voteGranted);
     }
 
     Task INode.IncrementVoteCount()

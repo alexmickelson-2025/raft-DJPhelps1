@@ -7,14 +7,7 @@
         public Dictionary<Guid, INode> Nodes { get; set; }
         public int TimeoutMultiplier { get; set; }
         public int InternalDelay { get; set; }
-        Task SendHeartbeat();
-        void MakeLeader();
-        void RequestVotesFromClusterRPC();
-        void StartNewElection();
-        void Start();
-        void Stop();
-        Task ReceiveVoteRPC(Guid id, int term, bool voteGranted);
-        Task IncrementVoteCount();
+        Task RespondVoteRPC(Guid id, int term, bool voteGranted);
         Task AppendEntriesRPC(Guid leader, CommandToken ct);
         //void AppendEntriesRPC(Guid g, int i);
         Task RequestVoteRPC(Guid id, int term);

@@ -92,11 +92,11 @@ namespace raft_DJPhelps1_Test
 
         // Testing Logs #2
         [Fact]
-        public void WhenClientSendsRequest_ThenLeaderAppendsToLog_Test()
+        public async void WhenClientSendsRequest_ThenLeaderAppendsToLog_Test()
         {
             Node node = new Node();
 
-            node.RequestAdd(1);
+            await node.RequestAdd(1);
 
             Assert.True(node.CommandLog.Count() > 0);
         }
@@ -124,7 +124,7 @@ namespace raft_DJPhelps1_Test
 
             node.MakeLeader();
 
-            node2.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.index == 0));
+            node2.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.INDEX == 0));
         }
 
 
@@ -153,11 +153,11 @@ namespace raft_DJPhelps1_Test
             var node_mock = Substitute.For<INode>();
             CommandToken tokens = new CommandToken()
             {
-                index = 0,
-                is_committed = true,
-                command = "",
-                value = 0,
-                term = 1
+                INDEX = 0,
+                ISCOMMITTED = true,
+                COMMAND = "",
+                VALUE = 0,
+                TERM = 1
             };
             node_mock.Id = Guid.NewGuid();
 
@@ -180,16 +180,16 @@ namespace raft_DJPhelps1_Test
             var test_node = new Node();
             var token = new CommandToken()
             {
-                index = 0,
-                is_committed = false,
-                is_valid = true,
-                value = 0,
-                command = "add",
-                term = 1
+                INDEX = 0,
+                ISCOMMITTED = false,
+                ISVALID = true,
+                VALUE = 0,
+                COMMAND = "add",
+                TERM = 1
             };
             test_node.CommandLog.Add(0, token);
 
-            token.is_committed = true;
+            token.ISCOMMITTED = true;
             await test_node.AppendEntriesRPC(Guid.NewGuid(), token);
 
             Assert.Equal(test_node.CommandLog[0], token);
@@ -203,19 +203,19 @@ namespace raft_DJPhelps1_Test
             var test_node = new Node();
             var token = new CommandToken()
             {
-                value = 1,
-                is_committed = false,
-                command = "add",
-                term = 1,
-                index = 0,
-                is_valid = true
+                VALUE = 1,
+                ISCOMMITTED = false,
+                COMMAND = "add",
+                TERM = 1,
+                INDEX = 0,
+                ISVALID = true
             };
             await test_node.RequestAdd(1);
 
             test_node.HasLogEntriesUncommitted = true;
             await test_node.SendHeartbeat();
 
-            Assert.True(test_node.CommandLog[0].is_committed);
+            Assert.True(test_node.CommandLog[0].ISCOMMITTED);
         }
 
 
@@ -231,19 +231,19 @@ namespace raft_DJPhelps1_Test
             test_node.Nodes.Add(node3.Id, node3);
             var token = new CommandToken()
             {
-                value = 1,
-                is_committed = false,
-                command = "add",
-                term = 1,
-                index = 0,
-                is_valid = true
+                VALUE = 1,
+                ISCOMMITTED = false,
+                COMMAND = "add",
+                TERM = 1,
+                INDEX = 0,
+                ISVALID = true
             };
-            test_node.CommandLog.Add(token.index, token);
+            test_node.CommandLog.Add(token.INDEX, token);
 
             test_node.LogActionCounter = 2;
             await test_node.SendHeartbeat();
 
-            Assert.True(test_node.CommandLog[0].is_committed);
+            Assert.True(test_node.CommandLog[0].ISCOMMITTED);
         }
 
         // Testing #9 
@@ -266,17 +266,17 @@ namespace raft_DJPhelps1_Test
             var test_node = new Node();
             var token = new CommandToken()
             {
-                value = 1,
-                command = "sub",
-                term = 1,
-                index = 0,
-                is_committed = false,
-                is_valid = true
+                VALUE = 1,
+                COMMAND = "sub",
+                TERM = 1,
+                INDEX = 0,
+                ISCOMMITTED = false,
+                ISVALID = true
             };
 
             await test_node.AppendEntriesRPC(Guid.NewGuid(), token);
 
-            Assert.True(test_node.CommandLog.ContainsKey(token.index));
+            Assert.True(test_node.CommandLog.ContainsKey(token.INDEX));
             Assert.True(test_node.CommandLog[0] == token);
         }
 
@@ -291,18 +291,18 @@ namespace raft_DJPhelps1_Test
             test_node.Nodes.Add(mock_node.Id, mock_node);
             var token = new CommandToken()
             {
-                command = "test",
-                term = 1,
-                index = 0,
-                is_committed = false,
-                is_valid = true,
-                value = 2
+                COMMAND = "test",
+                TERM = 1,
+                INDEX = 0,
+                ISCOMMITTED = false,
+                ISVALID = true,
+                VALUE = 2
             };
 
             await test_node.AppendEntriesRPC(mock_node.Id, token);
 
             await mock_node.Received().AppendResponseRPC(Arg.Any<Guid>(), Arg.Any<bool>(),
-                Arg.Is<CommandToken>(x => x.term == test_node.Term && x.index == test_node.LogIndex));
+                Arg.Is<CommandToken>(x => x.TERM == test_node.Term && x.INDEX == test_node.LogIndex));
         }
 
 
@@ -315,12 +315,12 @@ namespace raft_DJPhelps1_Test
             mock_node.Id = Guid.NewGuid();
             CommandToken token = new CommandToken()
             {
-                value = 1,
-                command = "add",
-                term = 1,
-                index = 0,
-                is_committed = false,
-                is_valid = true,
+                VALUE = 1,
+                COMMAND = "add",
+                TERM = 1,
+                INDEX = 0,
+                ISCOMMITTED = false,
+                ISVALID = true,
             };
             await test_node.RequestAdd(1);
             mock_node.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>())).Do(async x =>
@@ -330,7 +330,7 @@ namespace raft_DJPhelps1_Test
 
             await test_node.SendHeartbeat();
 
-            await mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.is_committed == true));
+            await mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.ISCOMMITTED == true));
         }
 
 
@@ -355,7 +355,7 @@ namespace raft_DJPhelps1_Test
             var test_node = new Node();
             CommandToken token = new CommandToken() // heartbeat token needs to have an index higher than starting.
             {
-                index = 3
+                INDEX = 3
             };
             var expected_index = 3;
             test_node.LogIndex = 3;
@@ -372,7 +372,7 @@ namespace raft_DJPhelps1_Test
             var test_node = new Node();
             CommandToken token = new CommandToken()
             {
-                index = 1
+                INDEX = 1
             };
             var expected_index = 3;
             test_node.LogIndex = 3;
@@ -400,8 +400,8 @@ namespace raft_DJPhelps1_Test
 
             await test_node.SendHeartbeat();
 
-            mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.index == test_node.LogIndex));
-            mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.index < test_node.NextIndex));
+            mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.INDEX == test_node.LogIndex));
+            mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.INDEX < test_node.NextIndex));
         }
 
         //   A. If the follower does not find an entry in its log with the same index and term, then it refuses the new entries
@@ -421,23 +421,23 @@ namespace raft_DJPhelps1_Test
         }
 
         [Fact] // Test for case ii.
-        public void FollowerDoesNotFindEntryInLogWithAppropriateIndexAndTerm_Test_IndexGreater()
+        public async void FollowerDoesNotFindEntryInLogWithAppropriateIndexAndTerm_Test_IndexGreater()
         {
             var test_node = new Node();
             CommandToken token = new CommandToken()
             {
-                index = 5,
-                command = "add",
-                value = 1
+                INDEX = 5,
+                COMMAND = "add",
+                VALUE = 1
             };
             var mock_node = Substitute.For<INode>();
             mock_node.Id = Guid.NewGuid();
             test_node.Nodes.Add(mock_node.Id, mock_node);
 
-            test_node.AppendEntriesRPC(mock_node.Id, token);
+            await test_node.AppendEntriesRPC(mock_node.Id, token);
 
-            mock_node.Received().AppendResponseRPC(test_node.Id, true, Arg.Is<CommandToken>(x =>
-                x.is_valid == false
+            await mock_node.Received().AppendResponseRPC(test_node.Id, true, Arg.Is<CommandToken>(x =>
+                x.ISVALID == false
             ));
         }
 
@@ -447,18 +447,18 @@ namespace raft_DJPhelps1_Test
             var test_node = new Node();
             CommandToken token = new CommandToken()
             {
-                index = 5,
-                command = "add",
-                value = 1
+                INDEX = 5,
+                COMMAND = "add",
+                VALUE = 1
             };
             test_node.LogIndex = 5;
 
             await test_node.AppendResponseRPC(Guid.NewGuid(), true, new CommandToken()
             {
-                index = 5,
-                command = "add",
-                value = 1,
-                is_valid = false
+                INDEX = 5,
+                COMMAND = "add",
+                VALUE = 1,
+                ISVALID = false
             });
 
             Assert.True(test_node.LogIndex == 4);
@@ -476,10 +476,10 @@ namespace raft_DJPhelps1_Test
             await test_node.RequestAdd(3);
 
             test_node.LogIndex++; // First entry committed.
-            test_node.CommandLog[0].is_committed = true;
-            test_node.ImportantValue += test_node.CommandLog[0].value;
+            test_node.CommandLog[0].ISCOMMITTED = true;
+            test_node.ImportantValue += test_node.CommandLog[0].VALUE;
             CommandToken rejecttoken = test_node.CommandLog[1];
-            rejecttoken.is_valid = false;
+            rejecttoken.ISVALID = false;
 
             await test_node.AppendResponseRPC(mock_index.Id, true, rejecttoken);
             int actual_index_post_rejection = test_node.LogIndex;
@@ -513,7 +513,7 @@ namespace raft_DJPhelps1_Test
             await test_node.SendHeartbeat();
             await test_node.SendHeartbeat();
 
-            Assert.False(test_node.CommandLog[0].is_committed);
+            Assert.False(test_node.CommandLog[0].ISCOMMITTED);
         }
 
 
@@ -526,7 +526,7 @@ namespace raft_DJPhelps1_Test
             var mock2 = Substitute.For<INode>();
             mock1.Id = Guid.NewGuid();
             mock2.Id = Guid.NewGuid();
-            test_node.RequestAdd(3);
+            await test_node.RequestAdd(3);
             mock1.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>()))
                 .Do(x => { });
             mock1.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>()))
@@ -540,7 +540,7 @@ namespace raft_DJPhelps1_Test
             await test_node.SendHeartbeat();
             await test_node.SendHeartbeat();
 
-            mock1.Received(5).AppendEntriesRPC(Arg.Any<Guid>(), test_node.CommandLog[0]);
+            await mock1.Received(5).AppendEntriesRPC(Arg.Any<Guid>(), test_node.CommandLog[0]);
         }
 
 
@@ -582,17 +582,17 @@ namespace raft_DJPhelps1_Test
             test_node.Nodes.Add(mock1.Id, mock1);
             CommandToken token = new CommandToken()
             {
-                command = "add",
-                value = 2,
-                index = 4,
-                is_committed = true,
-                is_valid = true,
-                term = 1
+                COMMAND = "add",
+                VALUE = 2,
+                INDEX = 4,
+                ISCOMMITTED = true,
+                ISVALID = true,
+                TERM = 1
             };
             test_node.AppendEntriesRPC(mock1.Id, token);
 
             mock1.Received().AppendResponseRPC(Arg.Any<Guid>(), true, Arg.Is<CommandToken>(x=>
-                x.is_valid == false ));
+                x.ISVALID == false ));
             Assert.True(test_node.CommandLog.Count == 0);
         }
 
@@ -609,39 +609,39 @@ namespace raft_DJPhelps1_Test
             {
                 new CommandToken()
                 {
-                    command = "add",
-                    value = 2,
-                    index = 3,
-                    is_committed = true,
-                    is_valid = true,
-                    term = 1
+                    COMMAND = "add",
+                    VALUE = 2,
+                    INDEX = 3,
+                    ISCOMMITTED = true,
+                    ISVALID = true,
+                    TERM = 1
                 },
                 new CommandToken()
                 {
-                    command = "add",
-                    value = 2,
-                    index = 2,
-                    is_committed = true,
-                    is_valid = true,
-                    term = 1
+                    COMMAND = "add",
+                    VALUE = 2,
+                    INDEX = 2,
+                    ISCOMMITTED = true,
+                    ISVALID = true,
+                    TERM = 1
                 },
                 new CommandToken()
                 {
-                    command = "add",
-                    value = 2,
-                    index = 1,
-                    is_committed = true,
-                    is_valid = true,
-                    term = 1
+                    COMMAND = "add",
+                    VALUE = 2,
+                    INDEX = 1,
+                    ISCOMMITTED = true,
+                    ISVALID = true,
+                    TERM = 1
                 },
                 new CommandToken()
                 {
-                    command = "add",
-                    value = 2,
-                    index = 0,
-                    is_committed = true,
-                    is_valid = true,
-                    term = 1
+                    COMMAND = "add",
+                    VALUE = 2,
+                    INDEX = 0,
+                    ISCOMMITTED = true,
+                    ISVALID = true,
+                    TERM = 1
                 }
             };
             
@@ -651,7 +651,7 @@ namespace raft_DJPhelps1_Test
             }
 
             await mock1.Received().AppendResponseRPC(Arg.Any<Guid>(), true, Arg.Is<CommandToken>(x =>
-                x.is_valid == true && x.index == 0));
+                x.ISVALID == true && x.INDEX == 0));
             Assert.True(test_node.CommandLog.Count == 1);
         }
     }

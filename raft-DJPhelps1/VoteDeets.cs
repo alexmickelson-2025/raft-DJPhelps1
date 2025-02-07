@@ -8,8 +8,8 @@ namespace raft_DJPhelps1
 {
     public record VoteDeets
     {
-        public Guid Id { get; set; }
-        public int Term {  get; set; }
-        public bool Vote { get; set; }
+        public Guid ID { get; set; }
+        public int TERM {  get; set; }
+        public bool VOTE { get; set; }
     }
 }

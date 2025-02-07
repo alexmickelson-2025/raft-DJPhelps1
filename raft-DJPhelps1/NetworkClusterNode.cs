@@ -33,55 +33,6 @@ namespace raft_DJPhelps1
                 Console.WriteLine($"node {Url} is down");
             }
         }
-
-        public async Task RequestAppendEntries(AppendDeets request)
-        {
-            try
-            {
-                await client.PostAsJsonAsync(Url + "/request/appendEntries", request);
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine($"node {Url} is down");
-            }
-        }
-
-        public async Task RequestVote(VoteDeets request)
-        {
-            try
-            {
-                await client.PostAsJsonAsync(Url + "/request/vote", request);
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine($"node {Url} is down");
-            }
-        }
-
-        public async Task RespondAppendEntries(AppendDeets response)
-        {
-            try
-            {
-                await client.PostAsJsonAsync(Url + "/response/appendEntries", response);
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine($"node {Url} is down");
-            }
-        }
-
-        public async Task ResponseVote(VoteDeets response)
-        {
-            try
-            {
-                await client.PostAsJsonAsync(Url + "/response/vote", response);
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine($"node {Url} is down");
-            }
-        }
-
         public async Task<bool> RequestAdd(int request_value)
         {
             try
@@ -132,59 +83,56 @@ namespace raft_DJPhelps1
         public int TimeoutMultiplier { get; set; }
         public int InternalDelay { get; set; }
 
-        public Task AppendEntriesRPC(Guid leader, CommandToken ct)
+        public async Task AppendEntriesRPC(Guid leader, CommandToken ct)
         {
-            throw new NotImplementedException();
+            try
+            {
+                AppendDeets headeritems = new AppendDeets() { CT = ct, ID = leader };
+                await client.PostAsJsonAsync(Url + "/request/appendEntries", headeritems);
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine($"node {Url} is down");
+            }
         }
 
-        public Task AppendResponseRPC(Guid RPCReceiver, bool response1, CommandToken response2)
+        public async Task AppendResponseRPC(Guid leader, bool response1, CommandToken ct)
         {
-            throw new NotImplementedException();
+            try
+            {
+                AppendDeets headeritems = new AppendDeets() { CT = ct, ID = leader, VLF = response1 };
+                await client.PostAsJsonAsync(Url + "/response/appendEntries", headeritems);
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine($"node {Url} is down");
+            }
         }
 
-        public Task IncrementVoteCount()
+        public async Task RespondVoteRPC(Guid id, int term, bool voteGranted)
         {
-            throw new NotImplementedException();
+            try
+            {
+                VoteDeets request = new VoteDeets() { ID = id, TERM = term, VOTE = voteGranted };
+                await client.PostAsJsonAsync(Url + "/response/vote", request);
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine($"node {Url} is down");
+            }
         }
 
-        public void MakeLeader()
+        public async Task RequestVoteRPC(Guid id, int term)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task ReceiveVoteRPC(Guid id, int term, bool voteGranted)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RequestVoteRPC(Guid id, int term)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RequestVotesFromClusterRPC()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SendHeartbeat()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Start()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void StartNewElection()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Stop()
-        {
-            throw new NotImplementedException();
+            try
+            {
+                VoteDeets request = new VoteDeets() { ID = id, TERM = term };
+                await client.PostAsJsonAsync(Url + "/request/vote", request);
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine($"node {Url} is down");
+            }
         }
     }
 }
