@@ -6,4 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\raft-DJPhelps1\raft-DJPhelps1.csproj" />
+  </ItemGroup>
+
 </Project>

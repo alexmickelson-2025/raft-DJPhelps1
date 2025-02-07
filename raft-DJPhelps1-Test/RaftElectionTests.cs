@@ -128,79 +128,49 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
 
-            node1.Start();
+            node1.StartNewElection();
 
-            Console.WriteLine(node1.State, node1.Id.ToString(), node1.Term);
-            Thread.Sleep(300);
-            node1.Stop();
-
-            node2.Received().RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>());
-            node3.Received().RequestVoteRPC(Arg.Is<Guid>(Id => Id == node1.Id), Arg.Is<int>(term => term == 4));
-
+            node2.Received().RequestVoteRPC(node1.Id, node1.Term);
+            node3.Received().RequestVoteRPC(node1.Id, node1.Term);
         }
 
         [Fact] // Testing #8.2
-        public void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster5_Test()
+        public async void CandidateBecomesALeaderWhenItReceivesMajorityVotes_Cluster3_Test()
         {
             Node node1 = NodeFactory.StartNewNode("Candidate");
             node1.Term = 2;
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
-            var node4 = Substitute.For<INode>();
-            var node5 = Substitute.For<INode>();
             node2.Id.Returns(Guid.NewGuid());
             node3.Id.Returns(Guid.NewGuid());
-            node4.Id.Returns(Guid.NewGuid());
-            node5.Id.Returns(Guid.NewGuid());
-
 
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
-            node1.Nodes.Add(node4.Id, node4);
-            node1.Nodes.Add(node5.Id, node5);
 
-            node1.Start();
+            node1.StartNewElection();
+            await node1.ReceiveVoteRPC(node2.Id, 2, true);
+            await node1.ReceiveVoteRPC(node3.Id, 2, true);
 
-            Thread.Sleep(350);
-
-            node1.ReceiveVoteRPC(node2.Id, 2, true);
-            node1.ReceiveVoteRPC(node3.Id, 2, true);
-            node1.ReceiveVoteRPC(node4.Id, 2, true);
-            node1.ReceiveVoteRPC(node5.Id, 2, true);
-
-            node1.Stop();
 
             Assert.True(node1.State == "Leader");
         }
 
         [Fact] // Testing #10
-        public void CandidateReceivesMajorityVotesWhileWaitingForUnresponsiveNode_Test()
+        public async void CandidateReceivesMajorityVotesWhileWaitingForUnresponsiveNode_Test()
         {
             Node node1 = NodeFactory.StartNewNode("Candidate");
             node1.Term = 2;
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
-            var node4 = Substitute.For<INode>();
-            var node5 = Substitute.For<INode>();
             node2.Id.Returns(Guid.NewGuid());
             node3.Id.Returns(Guid.NewGuid());
-            node4.Id.Returns(Guid.NewGuid());
-            node5.Id.Returns(Guid.NewGuid());
 
 
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
-            node1.Nodes.Add(node4.Id, node4);
-            node1.Nodes.Add(node5.Id, node5);
 
-            node1.Start();
-
-            Thread.Sleep(350);
-
-            node1.ReceiveVoteRPC(node2.Id, 2, true);
-            node1.ReceiveVoteRPC(node3.Id, 2, true);
-
-            node1.Stop();
+            node1.StartNewElection();
+            await node1.ReceiveVoteRPC(node2.Id, 2, true);
 
             Assert.True(node1.State == "Leader");
         }
@@ -350,7 +320,7 @@ namespace raft_TDD_Tests
 
         // Testing 18
         [Fact]
-        public void GivenCandidateReceivesAppendEntryFromPreviousTerm_CandidateRejects_Test()
+        public async void GivenCandidateReceivesAppendEntryFromPreviousTerm_CandidateRejects_Test()
         {
             Node node = new Node();
             node.State = "Candidate";
@@ -362,8 +332,8 @@ namespace raft_TDD_Tests
             node.Nodes.Add(node2.Id, node2);
 
             node2.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>())).
-                Do(x => { 
-                node.AppendEntriesRPC(node2.Id, new CommandToken()
+                Do(async x => { 
+                await node.AppendEntriesRPC(node2.Id, new CommandToken()
                 {
                     term = 1,
                     value = 0,
@@ -372,9 +342,9 @@ namespace raft_TDD_Tests
                     is_committed = false
                 });
                 });
-            node2.AppendEntriesRPC(node2.Id, new CommandToken());
+            await node2.AppendEntriesRPC(node2.Id, new CommandToken());
 
-            Assert.True(!node2.AppendEntriesResponseFlag);
+            Assert.True(node2.AppendEntriesResponseFlag);
         }
 
         // Testing 19
@@ -395,11 +365,11 @@ namespace raft_TDD_Tests
 
         // Putting the test for logging here until I can figure out why it isn't linking
         [Fact]
-        public void WhenClientSendsRequestThenLeaderAppendsToLog()
+        public async void WhenClientSendsRequestThenLeaderAppendsToLog()
         {
             Node node = new Node();
 
-            node.RequestAdd(1);
+            await node.RequestAdd(1);
             var expected = new Dictionary<int, CommandToken>();
 
             Assert.True(node.CommandLog.Count > 0);

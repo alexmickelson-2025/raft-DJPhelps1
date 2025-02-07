@@ -133,9 +133,9 @@ namespace raft_DJPhelps1_Test
         public async Task LeadersMaintainNextIndexAsync_Test()
         {
             var node = new Node();
-            node.RequestAdd(2);
-            node.RequestAdd(3);
-            node.RequestAdd(4);
+            await node.RequestAdd(2);
+            await node.RequestAdd(3);
+            await node.RequestAdd(4);
             await node.SendHeartbeat();
             await node.SendHeartbeat();
             await node.SendHeartbeat();
@@ -175,7 +175,7 @@ namespace raft_DJPhelps1_Test
 
         // Testing #7
         [Fact]
-        public void FollowerCommitsEntryAsSoonAsItLearnsItsEntryIsCommitted_Test()
+        public async void FollowerCommitsEntryAsSoonAsItLearnsItsEntryIsCommitted_Test()
         {
             var test_node = new Node();
             var token = new CommandToken()
@@ -190,7 +190,7 @@ namespace raft_DJPhelps1_Test
             test_node.CommandLog.Add(0, token);
 
             token.is_committed = true;
-            test_node.AppendEntriesRPC(Guid.NewGuid(), token);
+            await test_node.AppendEntriesRPC(Guid.NewGuid(), token);
 
             Assert.Equal(test_node.CommandLog[0], token);
         }
@@ -210,7 +210,7 @@ namespace raft_DJPhelps1_Test
                 index = 0,
                 is_valid = true
             };
-            test_node.RequestAdd(1);
+            await test_node.RequestAdd(1);
 
             test_node.HasLogEntriesUncommitted = true;
             await test_node.SendHeartbeat();
@@ -251,7 +251,7 @@ namespace raft_DJPhelps1_Test
         public async void LeaderCommitsLogsByIncrementingItsLogIndex_Test()
         {
             var test_node = new Node();
-            test_node.RequestAdd(3);
+            await test_node.RequestAdd(3);
 
             await test_node.SendHeartbeat();
 
@@ -261,7 +261,7 @@ namespace raft_DJPhelps1_Test
 
         // Testing #10
         [Fact]
-        public void GivenAFollowerReceivesLogs_FollowerAddsToPersonalLog_Test()
+        public async void GivenAFollowerReceivesLogs_FollowerAddsToPersonalLog_Test()
         {
             var test_node = new Node();
             var token = new CommandToken()
@@ -274,7 +274,7 @@ namespace raft_DJPhelps1_Test
                 is_valid = true
             };
 
-            test_node.AppendEntriesRPC(Guid.NewGuid(), token);
+            await test_node.AppendEntriesRPC(Guid.NewGuid(), token);
 
             Assert.True(test_node.CommandLog.ContainsKey(token.index));
             Assert.True(test_node.CommandLog[0] == token);
@@ -283,7 +283,7 @@ namespace raft_DJPhelps1_Test
 
         // Testing #11
         [Fact]
-        public void FollowerRespondsWithItsOwnTermAndLogIndex_Test()
+        public async void FollowerRespondsWithItsOwnTermAndLogIndex_Test()
         {
             var test_node = new Node();
             var mock_node = Substitute.For<INode>();
@@ -299,9 +299,9 @@ namespace raft_DJPhelps1_Test
                 value = 2
             };
 
-            test_node.AppendEntriesRPC(mock_node.Id, token);
+            await test_node.AppendEntriesRPC(mock_node.Id, token);
 
-            mock_node.Received().AppendResponseRPC(Arg.Any<Guid>(), Arg.Any<bool>(),
+            await mock_node.Received().AppendResponseRPC(Arg.Any<Guid>(), Arg.Any<bool>(),
                 Arg.Is<CommandToken>(x => x.term == test_node.Term && x.index == test_node.LogIndex));
         }
 
@@ -322,15 +322,15 @@ namespace raft_DJPhelps1_Test
                 is_committed = false,
                 is_valid = true,
             };
-            test_node.RequestAdd(1);
-            mock_node.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>())).Do(x =>
-                test_node.AppendResponseRPC(mock_node.Id, true, token)
+            await test_node.RequestAdd(1);
+            mock_node.When(x => x.AppendEntriesRPC(Arg.Any<Guid>(), Arg.Any<CommandToken>())).Do(async x =>
+                await test_node.AppendResponseRPC(mock_node.Id, true, token)
             );
             test_node.Nodes.Add(mock_node.Id, mock_node);
 
             await test_node.SendHeartbeat();
 
-            mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.is_committed == true));
+            await mock_node.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x => x.is_committed == true));
         }
 
 
@@ -339,7 +339,7 @@ namespace raft_DJPhelps1_Test
         public async void WhenLogCommitted_CommandAppliedToStateMachine_Test()
         {
             var test_node = new Node();
-            test_node.RequestAdd(3);
+            await test_node.RequestAdd(3);
             var expected = 3;
 
             await test_node.SendHeartbeat();
@@ -442,7 +442,7 @@ namespace raft_DJPhelps1_Test
         }
 
         [Fact] // Test for case iii.
-        public void FollowerDoesNotFindEntryInLogWithAppropriateIndexAndTerm_Test_IndexLesser()
+        public async void FollowerDoesNotFindEntryInLogWithAppropriateIndexAndTerm_Test_IndexLesser()
         {
             var test_node = new Node();
             CommandToken token = new CommandToken()
@@ -453,7 +453,7 @@ namespace raft_DJPhelps1_Test
             };
             test_node.LogIndex = 5;
 
-            test_node.AppendResponseRPC(Guid.NewGuid(), true, new CommandToken()
+            await test_node.AppendResponseRPC(Guid.NewGuid(), true, new CommandToken()
             {
                 index = 5,
                 command = "add",
@@ -472,8 +472,8 @@ namespace raft_DJPhelps1_Test
             var mock_index = Substitute.For<INode>();
             mock_index.Id = Guid.NewGuid();
             test_node.Nodes.Add(mock_index.Id, mock_index);
-            test_node.RequestAdd(1);
-            test_node.RequestAdd(3);
+            await test_node.RequestAdd(1);
+            await test_node.RequestAdd(3);
 
             test_node.LogIndex++; // First entry committed.
             test_node.CommandLog[0].is_committed = true;
@@ -481,12 +481,12 @@ namespace raft_DJPhelps1_Test
             CommandToken rejecttoken = test_node.CommandLog[1];
             rejecttoken.is_valid = false;
 
-            test_node.AppendResponseRPC(mock_index.Id, true, rejecttoken);
+            await test_node.AppendResponseRPC(mock_index.Id, true, rejecttoken);
             int actual_index_post_rejection = test_node.LogIndex;
             await test_node.SendHeartbeat();
 
             Assert.Equal(0, actual_index_post_rejection);
-            mock_index.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x =>
+            await mock_index.Received().AppendEntriesRPC(Arg.Any<Guid>(), Arg.Is<CommandToken>(x =>
             x == test_node.CommandLog[0]));
         }
 
@@ -599,7 +599,7 @@ namespace raft_DJPhelps1_Test
 
         // Testing #20
         [Fact]
-        public void NodeRejectsAppendEntriesIfRejectsIndexesUntilAppropriateOneArrives_Test()
+        public async void NodeRejectsAppendEntriesIfRejectsIndexesUntilAppropriateOneArrives_Test()
         {
             var test_node = new Node();
             var mock1 = Substitute.For<INode>();
@@ -647,10 +647,10 @@ namespace raft_DJPhelps1_Test
             
             foreach(var t in tokens)
             {
-                test_node.AppendEntriesRPC(mock1.Id, t);
+                await test_node.AppendEntriesRPC(mock1.Id, t);
             }
 
-            mock1.Received().AppendResponseRPC(Arg.Any<Guid>(), true, Arg.Is<CommandToken>(x =>
+            await mock1.Received().AppendResponseRPC(Arg.Any<Guid>(), true, Arg.Is<CommandToken>(x =>
                 x.is_valid == true && x.index == 0));
             Assert.True(test_node.CommandLog.Count == 1);
         }

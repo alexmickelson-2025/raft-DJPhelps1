@@ -63,7 +63,7 @@ node.Start();
 
 app.MapGet("/health", () => "healthy");
 
-app.MapGet("/nodeData", () =>
+app.MapGet("/nodedata", () =>
 {
     return new NodeData(
     Node_Id: node.Id,
@@ -75,7 +75,9 @@ app.MapGet("/nodeData", () =>
     LogIndex: node.LogIndex,
     Log: node.CommandLog,
     State: node.State,
-    TimeoutMultiplier: node.TimeoutMultiplier
+    TimeoutMultiplier: node.TimeoutMultiplier,
+    Heartbeat: node.Heartbeat,
+    ElectionTimeout: node.ElectionTimerCurr
     );
 });
 
@@ -101,6 +103,21 @@ app.MapPost("/response/vote", async (VoteDeets response) =>
 {
     logger.LogInformation("received vote response {response}", response);
     await node.ReceiveVoteRPC(response.Id, response.Term, response.Vote);
+});
+
+app.MapPost("/request/clockupdate", async (ClockPacingToken token) =>
+{
+    logger.LogInformation("Received request to update the clock.");
+    node.TimeoutMultiplier = token.TimeScaleMultiplier;
+    node.InternalDelay = token.DelayValue;
+});
+
+app.MapPost("/request/start", async (bool startflag) =>
+{
+    logger.LogInformation("Received request to toggle operation for {}", nodeId);
+    if(startflag)
+        node.Start();
+    else node.Stop();
 });
 
 app.MapPost("/request/add", async (int data) =>

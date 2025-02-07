@@ -12,12 +12,26 @@ namespace raft_DJPhelps1
     {
 
         public string Url { get; }
+        public bool StartFlag = false;
         private HttpClient client = new();
 
         public NetworkClusterNode(Guid id, string url)
         {
             Id = id;
             Url = url;
+        }
+
+        public async Task ToggleOperation()
+        {
+            try
+            {
+                await client.PostAsJsonAsync(Url + "/request/start", !StartFlag);
+                StartFlag = !StartFlag;
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine($"node {Url} is down");
+            }
         }
 
         public async Task RequestAppendEntries(AppendDeets request)
@@ -70,15 +84,53 @@ namespace raft_DJPhelps1
 
         public async Task<bool> RequestAdd(int request_value)
         {
-            await client.PostAsJsonAsync(Url + "/request/add", request_value);
-            return true;
+            try
+            {
+                await client.PostAsJsonAsync(Url + "/request/add", request_value);
+                return true;
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine($"node {Url} is down");
+                return false;
+            }
+        }
+
+        public async Task RequestTimeclockChange(int delay, int timescale)
+        {
+            try
+            {
+                ClockPacingToken ct = new ClockPacingToken()
+                {
+                    DelayValue = delay,
+                    TimeScaleMultiplier = timescale
+                };
+                await client.PostAsJsonAsync(Url + "/request/clockupdate", ct);
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine($"Node {Url} is down");
+            }
+        }
+
+        public async Task<NodeData?> RequestNodeHealth()
+        {
+            try
+            {
+                return await client.GetFromJsonAsync<NodeData>(Url + "/nodehealth");
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine($"Node {Url} is down");
+            }
+            return null;
         }
 
         public Guid Id { get; set; }
-        public int Term { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public Dictionary<Guid, INode> Nodes { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int TimeoutMultiplier { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int InternalDelay { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public int Term { get; set; }
+        public Dictionary<Guid, INode> Nodes { get; set; }
+        public int TimeoutMultiplier { get; set; }
+        public int InternalDelay { get; set; }
 
         public Task AppendEntriesRPC(Guid leader, CommandToken ct)
         {

@@ -1,7 +1,101 @@
 ﻿@page "/"
+@using raft_DJPhelps1
+<div class="row">
+    <div class="col">
+        <button @onclick="ToggleSim">Turn all nodes on/off</button>
+    </div>
 
-<PageTitle>Home</PageTitle>
+    <div class="col">
+        <label>Network Delay</label>
+        <input type="range" min="200" max="500" step="10" style="width:40%" @bind-value="NetworkDelay" />
+        <label>Time Scale</label>
+        <input type="range" min="20" max="50" step="5" style="width:40%" @bind-value="TimeoutMultiplier" />
+        <button @onclick="UpdateNodeTimeouts">Touch me to confirm</button>
+    </div>
 
-<h1>Hello, world!</h1>
+    <div class="col">
+        <label>Node (@nodeindex+1)</label>
+        <input @bind-value="@nodeindex" type="range" min="0" max="2" step="1"/>
+        <input @bind-value="@AddVal" type="range" min="-10" max="10" step="1" />
+        <button @onclick="SendAddRequest">Send request</button>
+    </div>
+</div>
 
-Welcome to your new app.
+<div class="row">
+    @foreach (var node in NodeDeeetsList.Values)
+    {
+        <div class="col">
+            <p>Node: @node.Node_Id</p>
+            <p>Current Leader: @node.CurrentTermLeader</p>
+            <p>State: @node.State  |  Term: @node.Term  |  Status: @node.Status</p>
+            <p>Commit index: @node.LogIndex  |  Next index: @node.NextIndex</p>
+            <p>Timeout Scalar: @node.ElectionTimeout</p>
+            <p>Heartbeat time: @node.Heartbeat  |  Election time: @node.ElectionTimer</p>
+        </div>
+    }
+
+</div>
+
+@code{
+    int nodeindex;
+    int AddVal;
+    int NetworkDelay;
+    int TimeoutMultiplier;
+    string[]? urls = new string[3];
+    List<Timer>? timers = new List<Timer>();
+    Dictionary<int,NodeData?> NodeDeeetsList = new Dictionary<int,NodeData?>();
+    Dictionary<int,NetworkClusterNode>? nodes;
+
+    private async void SendAddRequest(MouseEventArgs e){
+        if(nodes is not null){
+            await nodes[nodeindex].RequestAdd(AddVal);
+        }
+    }
+
+    protected override async void OnInitialized()
+    {
+        base.OnInitialized();
+        urls = Environment.GetEnvironmentVariable("NODE_URLS").Split(',');
+        TimeoutMultiplier = Int32.Parse(Environment.GetEnvironmentVariable("NODE_INTERVAL_SCALAR"));
+        nodes = new();
+
+        nodes.Add(1, new NetworkClusterNode(Guid.NewGuid(), urls[0]));
+        nodes.Add(2, new NetworkClusterNode(Guid.NewGuid(), urls[1]));
+        nodes.Add(3, new NetworkClusterNode(Guid.NewGuid(), urls[2]));
+
+        foreach(var node in nodes.Values){
+            await node.RequestTimeclockChange(0, TimeoutMultiplier);
+        }
+    }
+
+    private async void UpdateNodeTimeouts(MouseEventArgs e)
+    {
+        if(nodes is not null)
+            foreach(var n in nodes){
+                await n.Value.RequestTimeclockChange(NetworkDelay, TimeoutMultiplier);
+            }
+    }
+
+    public async Task GetNodeState(int i){
+        NodeDeeetsList[i+1] = await nodes[i+1].RequestNodeHealth();
+    }
+
+    private async void ToggleSim(){
+        if (nodes is not null)
+        {
+            int i = 0;
+            foreach(var n in nodes){
+                await n.Value.ToggleOperation();
+
+                if (n.Value.StartFlag)
+                    timers.Add(new Timer(_ =>
+                    {
+                        InvokeAsync(() => GetNodeState(i));
+                        InvokeAsync(StateHasChanged);
+                    }, null, 0, 200));
+                else
+                    timers[i+1]?.Dispose();
+            }
+        }
+    }
+}
