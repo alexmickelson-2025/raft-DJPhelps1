@@ -80,6 +80,7 @@ namespace raft_DJPhelps1
                                 Console.WriteLine($"Value of heartbeat: {Heartbeat}");
                                 await Task.Delay(50, DelayStop.Token);
                                 Heartbeat -= 50;
+                                Console.WriteLine($"Value of heartbeat: {Heartbeat}");
                             }
                             await SendHeartbeat();
                             Console.WriteLine($"Heartbeat from: {Id}\n");
@@ -112,6 +113,7 @@ namespace raft_DJPhelps1
                                 Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
                                 await Task.Delay(50, DelayStop.Token);
                                 ElectionTimerCurr -= 50;
+                                Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
                             }
 
                             State = "Candidate";
