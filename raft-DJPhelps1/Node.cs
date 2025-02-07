@@ -77,7 +77,7 @@ namespace raft_DJPhelps1
                         {
                             while(Heartbeat > 0)
                             {
-                                Console.WriteLine($"Sleeping for {50}");
+                                Console.WriteLine($"Value of heartbeat: {Heartbeat}");
                                 await Task.Delay(50, DelayStop.Token);
                                 Heartbeat -= 50;
                             }
@@ -164,8 +164,7 @@ namespace raft_DJPhelps1
                 {
                     RefreshElectionTimeout();
                     Term = election_term;
-                    if(State != "Candidate")
-                        DelayStop.Cancel();
+                    DelayStop.Cancel();
                     await Nodes[candidate_id].RespondVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
                     Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                 }
@@ -174,15 +173,13 @@ namespace raft_DJPhelps1
                     RefreshElectionTimeout();
                     Votes.Add(election_term, candidate_id);
                     Term = election_term;
-                    if (State != "Candidate")
-                        DelayStop.Cancel();
+                    DelayStop.Cancel();
                     await Nodes[candidate_id].RespondVoteRPC(Id, election_term, true);
                     Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                 }
                 else
                 {
-                    if (State != "Candidate")
-                        DelayStop.Cancel();
+                    DelayStop.Cancel();
                     await Nodes[candidate_id].RespondVoteRPC(candidate_id, election_term, false);
                     Console.WriteLine($"Node {candidate_id} vote request rejected at {DateTime.Now}");
                 }
