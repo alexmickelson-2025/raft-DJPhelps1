@@ -8,6 +8,11 @@ namespace raft_DJPhelps1
 {
     public class Node : INode
     {
+        private const int BaseTimerWaitCycle = 400;
+
+        private const int HeartbeatBase = 50;
+        private const int MinValueElectionTimeout = 150;
+        private const int MaxValueElectionTimeout = 300;
         public int ImportantValue;
         public bool IsStarted { get; set; } // false = NotStarted or Cancel; true = Started
         private bool HasWonElection_Flag { get; set; }
@@ -39,8 +44,8 @@ namespace raft_DJPhelps1
 
             // Timers
             TimeoutMultiplier = 50;
-            Heartbeat = 50 * TimeoutMultiplier;
-            ElectionTimerMax = initializer.Next(150, 300) * TimeoutMultiplier;
+            Heartbeat = HeartbeatBase * TimeoutMultiplier;
+            ElectionTimerMax = initializer.Next(MinValueElectionTimeout, MaxValueElectionTimeout) * TimeoutMultiplier;
             RefreshElectionTimeout();
             
             // Work entries
@@ -78,9 +83,9 @@ namespace raft_DJPhelps1
                             while(Heartbeat > 0)
                             {
                                 Console.WriteLine($"Value of heartbeat: {Heartbeat}");
-                                Heartbeat -= 50;
+                                Heartbeat -= BaseTimerWaitCycle;
                                 Console.WriteLine($"Value of heartbeat (2): {Heartbeat}");
-                                await Task.Delay(50, DelayStop.Token);
+                                await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
                             }
                             await SendHeartbeat();
                             Console.WriteLine($"Heartbeat from: {Id}\n");
@@ -111,8 +116,8 @@ namespace raft_DJPhelps1
                             while(ElectionTimerCurr > 0)
                             {
                                 Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
-                                await Task.Delay(50, DelayStop.Token);
-                                ElectionTimerCurr -= 50;
+                                await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
+                                ElectionTimerCurr -= BaseTimerWaitCycle;
                                 Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
                             }
 
@@ -261,8 +266,8 @@ namespace raft_DJPhelps1
                 while (ElectionTimerCurr > 0)
                 {
                     Console.WriteLine($"ElectionTimeout is {ElectionTimerCurr}");
-                    await Task.Delay(50, DelayStop.Token);
-                    ElectionTimerCurr -= 50;
+                    await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
+                    ElectionTimerCurr -= BaseTimerWaitCycle;
                 }
             }
             catch (Exception) {
@@ -283,7 +288,7 @@ namespace raft_DJPhelps1
         public void IsTimedOut()
         {
             var rand = new Random();
-            ElectionTimerMax = rand.Next(150, 300) * TimeoutMultiplier;
+            ElectionTimerMax = rand.Next(MinValueElectionTimeout, MaxValueElectionTimeout) * TimeoutMultiplier;
             RefreshElectionTimeout();
             StartNewElection();
         }
