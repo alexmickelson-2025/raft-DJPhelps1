@@ -168,24 +168,24 @@ namespace raft_DJPhelps1
                 {
                     RefreshElectionTimeout();
                     Term = election_term;
+                    Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                     DelayStop.Cancel();
                     await Nodes[candidate_id].RespondVoteRPC(Id, election_term, true); // RespondVoteRPC instead of return
-                    Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                 }
                 else if (!Votes.ContainsKey(election_term))
                 {
                     RefreshElectionTimeout();
                     Votes.Add(election_term, candidate_id);
                     Term = election_term;
+                    Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                     DelayStop.Cancel();
                     await Nodes[candidate_id].RespondVoteRPC(Id, election_term, true);
-                    Console.WriteLine($"Node {candidate_id} vote request accepted at {DateTime.Now}");
                 }
                 else
                 {
+                    Console.WriteLine($"Node {candidate_id} vote request rejected at {DateTime.Now}");
                     DelayStop.Cancel();
                     await Nodes[candidate_id].RespondVoteRPC(candidate_id, election_term, false);
-                    Console.WriteLine($"Node {candidate_id} vote request rejected at {DateTime.Now}");
                 }
             }
             else
