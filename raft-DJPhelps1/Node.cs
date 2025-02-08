@@ -66,70 +66,67 @@ namespace raft_DJPhelps1
             csi = new Dictionary<int, ClientStandin>();
         }
 
-        public void Start()
+        public async void Start()
         {
-            Task.Run(async () =>
+            if (IsStarted)
+                return;
+
+            IsStarted = true;
+            while (IsStarted)
             {
-                if (IsStarted)
-                    return;
-
-                IsStarted = true;
-                while (IsStarted)
+                if (State == "Leader")
                 {
-                    if (State == "Leader")
+                    try
                     {
-                        try
+                        while(Heartbeat > 0)
                         {
-                            while(Heartbeat > 0)
-                            {
-                                Console.WriteLine($"Value of heartbeat: {Heartbeat}");
-                                Heartbeat -= BaseTimerWaitCycle;
-                                Console.WriteLine($"Value of heartbeat (2): {Heartbeat}");
-                                await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
-                            }
-                            await SendHeartbeat();
-                            Console.WriteLine($"Heartbeat from: {Id}\n");
+                            Console.WriteLine($"Value of heartbeat: {Heartbeat}");
+                            Heartbeat -= BaseTimerWaitCycle;
+                            Console.WriteLine($"Value of heartbeat (2): {Heartbeat}");
+                            await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
                         }
-                        catch (OperationCanceledException e)
-                        {
-                            Console.WriteLine($"Cancel! Term: {Term}, State: {State}, CurrentLeader: {CurrentLeader}", e.Message);
-                        }
+                        await SendHeartbeat();
+                        Console.WriteLine($"Heartbeat from: {Id}\n");
                     }
-                    else if (State == "Candidate")
+                    catch (OperationCanceledException e)
                     {
-                        // Request all votes -> wait for election to end
-                        // if timed out, start new election
-
-                        try
-                        { // move to StartNewElection Only
-                            IsTimedOut();
-                        }
-                        catch (OperationCanceledException e)
-                        {
-                            Console.WriteLine($"Election cancelled!", e.Message);
-                        }
-                    }
-                    else if (State == "Follower")
-                    {
-                        try
-                        {
-                            while(ElectionTimerCurr > 0)
-                            {
-                                Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
-                                await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
-                                ElectionTimerCurr -= BaseTimerWaitCycle;
-                                Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
-                            }
-
-                            State = "Candidate";
-                        }
-                        catch (OperationCanceledException e)
-                        {
-                            Console.WriteLine($"Follower {Id} received heartbeat from leader {CurrentLeader}.\n", e.Message);
-                        }
+                        Console.WriteLine($"Cancel! Term: {Term}, State: {State}, CurrentLeader: {CurrentLeader}", e.Message);
                     }
                 }
-            });
+                else if (State == "Candidate")
+                {
+                    // Request all votes -> wait for election to end
+                    // if timed out, start new election
+
+                    try
+                    { // move to StartNewElection Only
+                        IsTimedOut();
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        Console.WriteLine($"Election cancelled!", e.Message);
+                    }
+                }
+                else if (State == "Follower")
+                {
+                    try
+                    {
+                        while(ElectionTimerCurr > 0)
+                        {
+                            Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
+                            await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
+                            ElectionTimerCurr -= BaseTimerWaitCycle;
+                            Console.WriteLine($"Election timeout in follower is {ElectionTimerCurr}");
+                        }
+
+                        State = "Candidate";
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        Console.WriteLine($"Follower {Id} received heartbeat from leader {CurrentLeader}.\n", e.Message);
+                    }
+                }
+            }
 
             Console.WriteLine($"Node {Id} stopped!");
         }
