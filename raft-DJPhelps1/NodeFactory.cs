@@ -8,8 +8,6 @@ namespace raft_DJPhelps1
 {
     public static class NodeFactory
     {
-        private static int DefaultTimer = 150;
-
         public static Node StartNewNode(string state, Guid? setGuid = null)
         {
             Node node = new Node();

@@ -9,9 +9,9 @@ namespace raft_DJPhelps1
     public class Node : INode
     {
         public int BaseTimerWaitCycle = 1000;
-        public int HeartbeatBase = 500;
-        public int MinValueElectionTimeout = 1500;
-        public int MaxValueElectionTimeout = 3000;
+        public int HeartbeatBase = 250;
+        public int MinValueElectionTimeout = 1000;
+        public int MaxValueElectionTimeout = 2000;
         public int ImportantValue;
         public bool IsStarted { get; set; } // false = NotStarted or Cancel; true = Started
         private bool HasWonElection_Flag { get; set; }
@@ -47,7 +47,7 @@ namespace raft_DJPhelps1
         public Node()
         {
             // Timers
-            TimeoutMultiplier = 100;
+            TimeoutMultiplier = 50;
             Heartbeat = HeartbeatBase * TimeoutMultiplier;
             ElectionTimerMax = GetNewElectionTimeout();
             RefreshElectionTimeout();
@@ -382,7 +382,7 @@ namespace raft_DJPhelps1
 
         public void ResetHeartbeat()
         {
-            Heartbeat = 50 * TimeoutMultiplier;
+            Heartbeat = HeartbeatBase * TimeoutMultiplier;
         }
 
         public void RefreshElectionTimeout()
@@ -564,7 +564,7 @@ namespace raft_DJPhelps1
 
         public async Task<bool> RequestAdd(int input_num)
         {
-            await Task.Run(() => Console.WriteLine($"Request to add {input_num} received at {DateTime.Now}"));
+            Console.WriteLine($"Request to add {input_num} received at {DateTime.Now}");
             CommandToken newToken = new()
             {
                 COMMAND = "add",

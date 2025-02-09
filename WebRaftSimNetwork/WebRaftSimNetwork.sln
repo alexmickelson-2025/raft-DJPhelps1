@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebRaftSimNetwork", "WebRaftSimNetwork.csproj", "{6678C017-EF99-1C95-3811-57440025220F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6678C017-EF99-1C95-3811-57440025220F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6678C017-EF99-1C95-3811-57440025220F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6678C017-EF99-1C95-3811-57440025220F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6678C017-EF99-1C95-3811-57440025220F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2CA41E1A-D86A-47FA-9832-6C401B34F801}
+	EndGlobalSection
+EndGlobal

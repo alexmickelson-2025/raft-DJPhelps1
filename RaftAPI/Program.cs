@@ -80,7 +80,8 @@ app.MapGet("/nodedata", () =>
     State: node.State,
     TimeoutMultiplier: node.TimeoutMultiplier,
     Heartbeat: node.Heartbeat,
-    ElectionTimeout: node.ElectionTimerCurr
+    ElectionTimeout: node.ElectionTimerCurr,
+    StateMachineVal: node.ImportantValue
     );
 });
 

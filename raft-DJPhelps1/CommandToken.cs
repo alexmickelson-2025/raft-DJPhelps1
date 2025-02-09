@@ -17,6 +17,8 @@ namespace raft_DJPhelps1
 
         bool IEquatable<CommandToken>.Equals(CommandToken? other)
         {
+            if(other is null)
+                throw new ArgumentNullException("Null value of comparison between two Command Tokens");
             return this.COMMAND == other.COMMAND &&
                 this.VALUE == other.VALUE &&
                 this.TERM == other.TERM &&

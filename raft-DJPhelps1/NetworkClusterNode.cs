@@ -1,6 +1,7 @@
 ﻿using raft_DJPhelps1;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
@@ -26,14 +27,27 @@ namespace raft_DJPhelps1
             Id = id;
             Url = url;
             Nodes = new();
+            nodestatus = new NodeData(
+             Node_Id : Guid.Empty,
+             NextIndex : 0,
+             LogIndex : 0,
+             CurrentTermLeader : Guid.Empty,
+             ElectionTimeout : -1,
+             ElectionTimer : -1,
+             Heartbeat : -1,
+             Log : new(),
+             State : "down",
+             Status : false,
+             Term : -1,
+             TimeoutMultiplier : 0,
+             StateMachineVal: 0 );
         }
 
-        public async Task ToggleOperation()
+        public async Task ToggleOperation(bool flag)
         {
             try
             {
-                await client.PostAsJsonAsync(Url + "/request/start", !StartFlag);
-                StartFlag = !StartFlag;
+                await client.PostAsJsonAsync(Url + "/request/start", flag);
             }
             catch (HttpRequestException)
             {
@@ -75,7 +89,7 @@ namespace raft_DJPhelps1
         {
             try
             {
-                nodestatus = await client.GetFromJsonAsync<NodeData>(Url + "/nodehealth") ?? throw new ArgumentNullException("could not retrieve node data");
+                nodestatus = await client.GetFromJsonAsync<NodeData>(Url + "/nodedata") ?? throw new ArgumentNullException("could not retrieve node data");
                 return nodestatus;
             }
             catch (HttpRequestException)

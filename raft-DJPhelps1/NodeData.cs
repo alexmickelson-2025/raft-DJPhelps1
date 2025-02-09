@@ -19,6 +19,7 @@ namespace raft_DJPhelps1
         string? State,
         int TimeoutMultiplier,
         int Heartbeat,
-        int ElectionTimeout
+        int ElectionTimeout,
+        int StateMachineVal
     );
 }
