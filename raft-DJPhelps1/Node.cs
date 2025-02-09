@@ -37,6 +37,8 @@ namespace raft_DJPhelps1
         public CancellationTokenSource DelayStop { get; set; }
         public Dictionary<int, CommandToken> CommandLog { get; set; }
         public Dictionary<int, ClientStandin> csi { get; set; }
+        public object ElectionObject = new object();
+
         private object heartbeatlockid = new object();
         private object electiontimerlockid = new object();
         private object voteslockid = new object();
@@ -69,7 +71,7 @@ namespace raft_DJPhelps1
             csi = new Dictionary<int, ClientStandin>();
         }
 
-        public async Task Start()
+        public async void Start()
         {
             if (IsStarted)
                 return;
@@ -88,9 +90,9 @@ namespace raft_DJPhelps1
                             lock (heartbeatlockid)
                             {
                                 Heartbeat -= BaseTimerWaitCycle;
-                                if (Heartbeat < 0)
-                                    break;
                             }
+                            if (Heartbeat < 0)
+                                break;
                             Console.WriteLine($"Value of heartbeat (2): {Heartbeat}");
                             await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
                         }
@@ -108,9 +110,22 @@ namespace raft_DJPhelps1
                     // if timed out, start new election
 
                     try
-                    { // move to StartNewElection Only
+                    {
                         Console.WriteLine($"Node {Id} experienced a timeout, election started.");
-                        IsTimedOut();
+                        StartNewElection();
+                        while (IsHaltedFlag)
+                        {
+                            Console.WriteLine($"ElectionTimeout is {ElectionTimerCurr}");
+                            await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
+                            lock (electiontimerlockid)
+                            {
+                                ElectionTimerCurr -= BaseTimerWaitCycle;
+                            }
+                            if (ElectionTimerCurr < 0)
+                                break;
+                        }
+                        if (State != "Leader")
+                            State = "Follower";
                     }
                     catch (OperationCanceledException e)
                     {
@@ -128,9 +143,9 @@ namespace raft_DJPhelps1
                             lock (electiontimerlockid)
                             {
                                 ElectionTimerCurr -= BaseTimerWaitCycle;
-                                if (ElectionTimerCurr < 0)
-                                    break;
                             }
+                            if (ElectionTimerCurr < 0)
+                                break;
                             Console.WriteLine($"Election timer in follower is {ElectionTimerCurr}");
                         }
 
@@ -354,32 +369,15 @@ namespace raft_DJPhelps1
 
         public async void StartNewElection()
         {
-            VoteCountForMe = 0;
-            Term++;
+            lock (ElectionObject)
+            {
+                VoteCountForMe = 0;
+                Term++;
+            }
 
             // Send out requests for votes, and vote for self.
-            RequestVotesFromClusterRPC();
             await RespondVoteRPC(Id, Term, true);
-
-            if (State == "Leader")
-                return;
-            try
-            {
-                while (IsHaltedFlag)
-                {
-                    Console.WriteLine($"ElectionTimeout is {ElectionTimerCurr}");
-                    await Task.Delay(BaseTimerWaitCycle, DelayStop.Token);
-                    lock (electiontimerlockid)
-                    {
-                        ElectionTimerCurr -= BaseTimerWaitCycle;
-                        if (ElectionTimerCurr < 0)
-                            break;
-                    }
-                }
-            }
-            catch (Exception) {
-                Console.WriteLine("Election Booted.");
-            }
+            RequestVotesFromClusterRPC();
         }
 
         public void ResetHeartbeat()
@@ -404,7 +402,6 @@ namespace raft_DJPhelps1
         public void IsTimedOut()
         {
             ElectionTimerMax = GetNewElectionTimeout();
-            RefreshElectionTimeout();
             StartNewElection();
         }
 

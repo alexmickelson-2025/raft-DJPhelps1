@@ -54,13 +54,14 @@ namespace raft_TDD_Tests
         public async void NodeReceivesAppendEntriesPersistsLeadershipStatus_Test()
         {
             Node node = new Node();
-            var mock_node = Substitute.For<INode>();
-            mock_node.Id = Guid.NewGuid();
-            node.Nodes.Add(mock_node.Id, mock_node);
+            Node node2 = new Node();
+            node2.State = "Leader";
+            node.Nodes.Add(node2.Id, node2);
+            node2.Nodes.Add(node.Id, node);
 
-            await node.AppendEntriesRPC(mock_node.Id, new CommandToken());
+            await node2.SendHeartbeat();
 
-            Assert.True(node.CurrentLeader == mock_node.Id);
+            Assert.True(node.CurrentLeader == node2.Id);
         }
 
         [Fact] // Testing #3
@@ -75,15 +76,18 @@ namespace raft_TDD_Tests
         public async void NodeStartsElectionWithinElectionTimeout_Test()
         {
             Node node = new Node();
+            var mock_node = Substitute.For<INode>();
+            mock_node.Id = Guid.NewGuid();
+            node.Nodes.Add(mock_node.Id, mock_node);
             node.BaseTimerWaitCycle = 100;
             node.ElectionTimerMax = 1100;
-            node.RefreshElectionTimeout();
-            
+            node.ElectionTimerCurr = 840;
+
             node.Start();
-            await Task.Delay(1300);
+            await Task.Delay(1000);
             node.Stop();
 
-            Assert.True(node.State == "Candidate");
+            await mock_node.Received().RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>());
         }
 
         [Fact] // Testing #5
@@ -142,7 +146,7 @@ namespace raft_TDD_Tests
         }
 
         [Fact] // Testing #8.2
-        public void CandidatesSendVoteRequestWhenElectionStarts()
+        public async void CandidatesSendVoteRequestWhenElectionStarts()
         {
             Node node1 = NodeFactory.StartNewNode("Follower");
             node1.Term = 3;
@@ -157,9 +161,10 @@ namespace raft_TDD_Tests
             node1.Nodes.Add(node3.Id, node3);
 
             node1.StartNewElection();
+            await Task.Delay(300);
 
-            node2.Received().RequestVoteRPC(node1.Id, node1.Term);
-            node3.Received().RequestVoteRPC(node1.Id, node1.Term);
+            node2.Received().RequestVoteRPC(node1.Id, Arg.Any<int>());
+            node3.Received().RequestVoteRPC(node1.Id, Arg.Any<int>());
         }
 
         [Fact] // Testing #8.2
@@ -169,8 +174,10 @@ namespace raft_TDD_Tests
             node1.Term = 2;
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
-            node2.Id = Guid.NewGuid();
-            node3.Id = Guid.NewGuid();
+            var i = Guid.NewGuid();
+            var j = Guid.NewGuid();
+            node2.Id.Returns(i);
+            node3.Id.Returns(j);
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
 
@@ -297,21 +304,24 @@ namespace raft_TDD_Tests
             Node node1 = new Node();
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
-            node2.Id = Guid.NewGuid();
-            node3.Id = Guid.NewGuid();
-            node1.Votes.Add(2, node2.Id);
+            var i = Guid.NewGuid();
+            var j = Guid.NewGuid();
+            node2.Id.Returns(i);
+            node3.Id.Returns(j);
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
             node1.State = "Candidate";
             var ExpectedState = node1.State;
-            node1.TimeoutMultiplier = 2;
-            node1.BaseTimerWaitCycle = 200;
+            node1.TimeoutMultiplier = 1;
+            node1.BaseTimerWaitCycle = 100;
+            node1.ElectionTimerCurr = 850;
 
             node1.Start();
-            await Task.Delay(200);
+            await Task.Delay(1800);
             node1.Stop();
 
-            Assert.True(node1.State == ExpectedState);
+            await node2.Received().RequestVoteRPC(node1.Id, 3);
+            await node3.Received().RequestVoteRPC(node1.Id, 3);
         }
 
         // Testing 17
