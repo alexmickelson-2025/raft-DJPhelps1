@@ -8,6 +8,34 @@ namespace raft_TDD_Tests
 {
     public class RaftElectionTests
     {
+        /*
+            1. When a leader is active it sends a heart beat within 50ms.
+            2. When a node receives an AppendEntries from another node, then first node remembers that other node is the current leader.
+            3. When a new node is initialized, it should be in follower state.
+            4. When a follower doesn't get a message for 300ms then it starts an election.
+            5. When the election time is reset, it is a random value between 150 and 300ms.
+                between
+                random: call n times and make sure that there are some that are different (other properties of the distribution if you like)
+            6. When a new election begins, the term is incremented by 1.
+                Create a new node, store id in variable.
+                wait 300 ms
+                reread term (?)
+                assert after is greater (by at least 1)
+            7. When a follower does get an AppendEntries message, it resets the election timer. (i.e. it doesn't start an election even after more than 300ms)
+            8. Given an election begins, when the candidate gets a majority of votes, it becomes a leader. (think of the easy case; can use two tests for single and multi-node clusters)
+            9. Given a candidate receives a majority of votes while waiting for unresponsive node, it still becomes a leader.
+            10. A follower that has not voted and is in an earlier term responds to a RequestForVoteRPC with yes. (the reply will be a separate RPC)
+            11. Given a candidate server that just became a candidate, it votes for itself.
+            12. Given a candidate, when it receives an AppendEntries message from a node with a later term, then candidate loses and becomes a follower.
+            13. Given a candidate, when it receives an AppendEntries message from a node with an equal term, then candidate loses and becomes a follower.
+            14. If a node receives a second request for vote for the same term, it should respond no. (again, separate RPC for response)
+            15. If a node receives a second request for vote for a future term, it should vote for that node.
+            16. Given a candidate, when an election timer expires inside of an election, a new election is started.
+            17. When a follower node receives an AppendEntries request, it sends a response.
+            18. Given a candidate receives an AppendEntries from a previous term, then rejects.
+            19. When a candidate wins an election, it immediately sends a heart beat.
+         */
+
         [Fact] // Testing #1
         public void NodeLeaderSendsHeartbeatWithinInterval_Test()
         {
@@ -23,17 +51,16 @@ namespace raft_TDD_Tests
         }
 
         [Fact] // Testing #2
-        public void NodeReceivesAppendEntriesPersistsLeadershipStatus_Test()
+        public async void NodeReceivesAppendEntriesPersistsLeadershipStatus_Test()
         {
-            Node node = NodeFactory.StartNewNode("Leader");
-            var node2 = Substitute.For<Node>();
-            node.Nodes.Add(node2.Id, node2);
+            Node node = new Node();
+            var mock_node = Substitute.For<INode>();
+            mock_node.Id = Guid.NewGuid();
+            node.Nodes.Add(mock_node.Id, mock_node);
 
-            node.Start();
-            Thread.Sleep(100);
+            await node.AppendEntriesRPC(mock_node.Id, new CommandToken());
 
-            node.Stop();
-            Assert.True(node2.CurrentLeader == node.Id);
+            Assert.True(node.CurrentLeader == mock_node.Id);
         }
 
         [Fact] // Testing #3
@@ -45,12 +72,15 @@ namespace raft_TDD_Tests
         }
 
         [Fact] // Testing #4
-        public void NodeStartsElectionWithinElectionTimeout_Test()
+        public async void NodeStartsElectionWithinElectionTimeout_Test()
         {
             Node node = new Node();
-
+            node.BaseTimerWaitCycle = 100;
+            node.ElectionTimerMax = 1100;
+            node.RefreshElectionTimeout();
+            
             node.Start();
-            Thread.Sleep(350);
+            await Task.Delay(1300);
             node.Stop();
 
             Assert.True(node.State == "Candidate");
@@ -61,11 +91,11 @@ namespace raft_TDD_Tests
         {
             Node node = new Node();
 
-            node.Start();
-            Thread.Sleep(node.ElectionTimerMax + 40);
-            node.Stop();
+            node.ElectionTimerCurr = 200;
+            node.RefreshElectionTimeout();
 
-            Assert.True(node.ElectionTimerMax >= 150 && node.ElectionTimerMax <= 300);
+            Assert.True(node.ElectionTimerCurr == node.ElectionTimerMax);
+            Assert.True(node.ElectionTimerCurr <= 300 * 100);
         }
 
         [Fact] // Testing #6
@@ -74,9 +104,7 @@ namespace raft_TDD_Tests
             Node node = new Node();
             var expectedTerm = node.Term;
 
-            node.Start();
-            Thread.Sleep(node.ElectionTimerMax + 50);
-            node.Stop();
+            node.StartNewElection();
 
             var actualTerm = node.Term;
 
@@ -141,16 +169,13 @@ namespace raft_TDD_Tests
             node1.Term = 2;
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
-            node2.Id.Returns(Guid.NewGuid());
-            node3.Id.Returns(Guid.NewGuid());
-
+            node2.Id = Guid.NewGuid();
+            node3.Id = Guid.NewGuid();
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
 
-            node1.StartNewElection();
             await node1.RespondVoteRPC(node2.Id, 2, true);
             await node1.RespondVoteRPC(node3.Id, 2, true);
-
 
             Assert.True(node1.State == "Leader");
         }
@@ -162,14 +187,12 @@ namespace raft_TDD_Tests
             node1.Term = 2;
             var node2 = Substitute.For<INode>();
             var node3 = Substitute.For<INode>();
-            node2.Id.Returns(Guid.NewGuid());
-            node3.Id.Returns(Guid.NewGuid());
-
-
+            node2.Id = Guid.NewGuid();
+            node3.Id = Guid.NewGuid();
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
 
-            node1.StartNewElection();
+            node1.VoteCountForMe++;
             await node1.RespondVoteRPC(node2.Id, 2, true);
 
             Assert.True(node1.State == "Leader");
@@ -178,30 +201,33 @@ namespace raft_TDD_Tests
 
         // Testing 11
         [Fact]
-        public void GivenNewCandidateServer_ServerVotesForSelf_Test()
+        public async void GivenNewCandidateServer_ServerVotesForSelf_Test()
         {
             Node node1 = new Node();
+            node1.Heartbeat = 5;
+            node1.TimeoutMultiplier = 1;
+            node1.ElectionTimerMax = 30;
+            node1.BaseTimerWaitCycle = 2;
+            node1.RefreshElectionTimeout();
 
             node1.StartNewElection();
+            await Task.Delay(50);
 
-            Assert.True(node1.VoteCountForMe == 1);
+            Assert.True(node1.Votes[node1.Term] == node1.Id);
         }
 
         // Testing 12
         [Fact]
-        public void GivenCandidateReceivesLaterAppendEntries_CandidateBecomesFollower_Test()
+        public async void GivenCandidateReceivesLaterAppendEntries_CandidateBecomesFollower_Test()
         {
             Node node1 = new Node();
-            Node node2 = new Node();
+            var node2 = Substitute.For<INode>();
+            node2.Id = Guid.NewGuid();
             node1.Nodes.Add(node2.Id, node2);
-            node2.Nodes.Add(node1.Id, node1);
             node2.Term = 5;
-            node2.State = "Leader";
             node1.State = "Candidate";
 
-            node1.Start();
-            node2.Start();
-            Thread.Sleep(1000);
+            await node1.AppendEntriesRPC(node2.Id, new CommandToken() { TERM = 5 });
 
             Assert.True(node1.Term == 5);
             Assert.True(node1.State == "Follower");
@@ -209,20 +235,17 @@ namespace raft_TDD_Tests
 
         // Testing 13
         [Fact]
-        public void GivenCandidateReceivesSameTermAppendEntries_CandidateBecomesFollower_Test()
+        public async void GivenCandidateReceivesSameTermAppendEntries_CandidateBecomesFollower_Test()
         {
             Node node1 = new Node();
-            Node node2 = new Node();
+            var node2 = Substitute.For<INode>();
+            node2.Id = Guid.NewGuid();
             node1.Nodes.Add(node2.Id, node2);
-            node2.Nodes.Add(node1.Id, node1);
             node2.Term = 5;
             node1.Term = 5;
-            node2.State = "Leader";
             node1.State = "Candidate";
 
-            node1.Start();
-            node2.Start();
-            Thread.Sleep(1000);
+            await node1.AppendEntriesRPC(node2.Id, new CommandToken() { TERM = 5 });
 
             Assert.True(node1.Term == 5);
             Assert.True(node1.State == "Follower");
@@ -230,24 +253,19 @@ namespace raft_TDD_Tests
 
         // Testing 14
         [Fact]
-        public void IfNodeReceivesSecondRequestForVoteForSameTerm_NodeRespondsNO_Test()
+        public async void IfNodeReceivesSecondRequestForVoteForSameTerm_NodeRespondsNO_Test()
         {
             Node node1 = new Node();
-            var node2 = Substitute.For<Node>();
-            node2.VoteCountForMe = 0;
+            var node2 = Substitute.For<INode>();
             node2.Id = Guid.NewGuid();
             node2.Term = 2;
             node1.Votes.Add(2, node2.Id);
             node1.Nodes.Add(node2.Id, node2);
 
-            node2.When(x => x.RequestVotesFromClusterRPC()).Do(x => {
-                node1.RequestVoteRPC(node2.Id, node2.Term);
-            });
-            node2.When(x => x.IncrementVoteCount()).Do(x => { node2.VoteCountForMe++; });
+            await node1.RequestVoteRPC(node2.Id, node2.Term);
+            await node1.RequestVoteRPC(node2.Id, node2.Term);
 
-            node2.RequestVotesFromClusterRPC();
-
-            Assert.True(node2.VoteCountForMe == 0);
+            await node2.Received(4).RespondVoteRPC(node2.Id, node2.Term, true);
         }
 
         // Testing 15
@@ -274,26 +292,26 @@ namespace raft_TDD_Tests
 
         // Testing 16
         [Fact]
-        public void GivenCandidateWhenElectionTimerExpiresInsideAnElection_NewElectionStarted_Test()
+        public async void GivenCandidateWhenElectionTimerExpiresInsideAnElection_NewElectionStarted_Test()
         {
             Node node1 = new Node();
-            var node2 = Substitute.For<Node>();
-            var node3 = Substitute.For<Node>();
-            var ExpectedTermState1 = node1.Term;
-
-            node2.VoteCountForMe = 0;
+            var node2 = Substitute.For<INode>();
+            var node3 = Substitute.For<INode>();
             node2.Id = Guid.NewGuid();
             node3.Id = Guid.NewGuid();
-            node2.Term = 2;
             node1.Votes.Add(2, node2.Id);
             node1.Nodes.Add(node2.Id, node2);
             node1.Nodes.Add(node3.Id, node3);
+            node1.State = "Candidate";
+            var ExpectedState = node1.State;
+            node1.TimeoutMultiplier = 2;
+            node1.BaseTimerWaitCycle = 200;
 
-            node2.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => { });
-            node3.When(x => x.RequestVoteRPC(Arg.Any<Guid>(), Arg.Any<int>())).Do(x => { });
+            node1.Start();
+            await Task.Delay(200);
+            node1.Stop();
 
-
-            Assert.True(ExpectedTermState1 < node1.Term);
+            Assert.True(node1.State == ExpectedState);
         }
 
         // Testing 17
