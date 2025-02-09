@@ -19,6 +19,7 @@ namespace raft_DJPhelps1
         public Dictionary<Guid, INode> Nodes { get; set; }
         public int TimeoutMultiplier { get; set; }
         public int InternalDelay { get; set; }
+        public NodeData nodestatus { get; set; }
 
         public NetworkClusterNode(Guid id, string url)
         {
@@ -74,7 +75,8 @@ namespace raft_DJPhelps1
         {
             try
             {
-                return await client.GetFromJsonAsync<NodeData>(Url + "/nodehealth");
+                nodestatus = await client.GetFromJsonAsync<NodeData>(Url + "/nodehealth") ?? throw new ArgumentNullException("could not retrieve node data");
+                return nodestatus;
             }
             catch (HttpRequestException)
             {
