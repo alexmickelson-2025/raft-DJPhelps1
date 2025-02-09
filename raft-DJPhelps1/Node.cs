@@ -9,9 +9,9 @@ namespace raft_DJPhelps1
     public class Node : INode
     {
         public int BaseTimerWaitCycle = 1000;
-        public int HeartbeatBase = 50;
-        public int MinValueElectionTimeout = 150;
-        public int MaxValueElectionTimeout = 300;
+        public int HeartbeatBase = 500;
+        public int MinValueElectionTimeout = 1500;
+        public int MaxValueElectionTimeout = 3000;
         public int ImportantValue;
         public bool IsStarted { get; set; } // false = NotStarted or Cancel; true = Started
         private bool HasWonElection_Flag { get; set; }
